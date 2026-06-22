@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: payplus-wallet-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: payplus
+      POSTGRES_PASSWORD: payplus
+      POSTGRES_DB: payplus_wallet
+    ports:
+      - "5432:5432"
+    volumes:
+      - payplus_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payplus -d payplus_wallet"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  payplus_pg_data:
