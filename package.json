@@ -8,7 +8,10 @@
     "dev": "nodemon",
     "build": "tsc",
     "run-sql": "ts-node scripts/run-sql-scripts.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:concurrency": "ts-node scripts/test-concurrency.ts",
+    "test:idempotency": "ts-node scripts/test-idempotency.ts",
+    "test:double-refund": "ts-node scripts/test-double-refund.ts"
   },
   "license": "ISC",
   "dependencies": {

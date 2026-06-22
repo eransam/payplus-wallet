@@ -1,5 +1,5 @@
 import dal from "../04-dal/dal";
-import logger from "../01-utils/log-helper";
+import { PoolClient } from "pg";
 import { AppError, notFound } from "../01-utils/app-error";
 import { EntityStatus, MerchantModel } from "../03-models/wallet-domain-models";
 
@@ -27,6 +27,19 @@ async function getMerchantById(id: number): Promise<MerchantModel | null> {
   const pool = await dal.getPool();
   const result = await pool.query(
     `SELECT id, name, status, created_at, updated_at FROM merchants WHERE id = $1`,
+    [id]
+  );
+  return result.rows[0] ? mapRow(result.rows[0]) : null;
+}
+
+/** Row lock inside payment transaction — status cannot flip mid-charge */
+async function lockMerchantForUpdate(
+  client: PoolClient,
+  id: number
+): Promise<MerchantModel | null> {
+  const result = await client.query(
+    `SELECT id, name, status, created_at, updated_at
+     FROM merchants WHERE id = $1 FOR UPDATE`,
     [id]
   );
   return result.rows[0] ? mapRow(result.rows[0]) : null;
@@ -70,6 +83,7 @@ async function requireActiveMerchant(id: number): Promise<MerchantModel> {
 export default {
   createMerchant,
   getMerchantById,
+  lockMerchantForUpdate,
   listMerchants,
   updateMerchantStatus,
   requireActiveMerchant,

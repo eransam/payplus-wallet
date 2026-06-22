@@ -68,10 +68,57 @@ curl -X POST http://localhost:3000/api/transactions/charge -H "Content-Type: app
 ## Key design decisions
 
 - **Money**: `NUMERIC(18,2)` in PostgreSQL, exposed as strings in API
-- **Concurrency**: `SELECT ... FOR UPDATE` on wallet row inside `BEGIN/COMMIT`
-- **Idempotency**: unique `client_request_id` per transaction
-- **Ledger**: append-only; only `completed` transactions create ledger entries
+- **Concurrency**: `SELECT ... FOR UPDATE` on wallet (and merchant) inside `BEGIN/COMMIT`
+- **Optimistic locking**: `wallets.version` checked on every balance update
+- **Idempotency**: unique `client_request_id` + lookup before insert + race fallback
+- **Ledger**: append-only (DB trigger blocks UPDATE/DELETE); only `completed` transactions create entries
+- **Refund cap**: sum of completed refunds cannot exceed original charge amount
+- **DB constraints**: `CHECK (balance >= 0)`, `CHECK (amount > 0)`, status enums
 - **Errors**: PayPlus structured format via `AppError` + `errors-handler`
+
+## Financial safety guarantees
+
+| Scenario | Protection |
+|----------|------------|
+| Two parallel charges on same wallet | `FOR UPDATE` row lock — second request waits, then sees updated balance |
+| Network retry with same `client_request_id` | `UNIQUE(client_request_id)` + return existing transaction |
+| Partial failure mid-charge | Single DB transaction — `ROLLBACK` on any error |
+| Negative balance | App check + `UPDATE … WHERE balance >= amount` + `CHECK (balance >= 0)` |
+| Double refund | Sum completed refunds + new amount ≤ original charge |
+| Ledger tampering | Append-only trigger on `ledger_entries` |
+| Merchant deactivated mid-payment | Merchant row locked with `FOR UPDATE` inside payment transaction |
+
+### Charge flow (inside one DB transaction)
+
+```
+BEGIN
+  → check idempotency (client_request_id)
+  → SELECT wallet FOR UPDATE
+  → SELECT merchant FOR UPDATE
+  → validate balance
+  → INSERT transaction (completed)
+  → INSERT ledger entry
+  → UPDATE wallet (balance -= amount, version++)
+COMMIT
+```
+
+### Interview talking points
+
+1. **Concurrency** — `FOR UPDATE` ensures only one request updates the wallet at a time
+2. **Idempotency** — safe retries from PayPlus without double charge
+3. **Immutable ledger** — audit trail; corrections are new entries, never UPDATE/DELETE
+4. **Defense in depth** — validation in app + constraints in DB
+5. **Refund validation** — prevents refunding more than was charged
+
+### Manual safety tests
+
+With the API running (`npm run dev`):
+
+```bash
+npm run test:concurrency   # 100 ILS, two parallel 80 ILS charges → one succeeds, balance 20
+npm run test:idempotency   # same client_request_id twice → single charge
+npm run test:double-refund # two 60 ILS refunds on 100 charge → second rejected
+```
 
 ## Assumptions
 

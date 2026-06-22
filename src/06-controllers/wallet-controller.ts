@@ -41,7 +41,19 @@ async function sendTransactionResponse(
   if (reason === "Wallet is inactive") {
     throw new AppError("wallet_inactive", reason, 409, { wallet_id: transaction.wallet_id });
   }
+  if (reason === "Refund amount exceeds original charge") {
+    throw new AppError("refund_exceeds_charge", reason, 409, {
+      transaction_id: transaction.id,
+      original_transaction_id: transaction.original_transaction_id,
+      requested_amount: transaction.amount,
+    });
+  }
   throw new AppError("transaction_declined", reason, 409, { transaction_id: transaction.id });
+}
+
+function readClientRequestId(body: Record<string, unknown>): string {
+  const raw = body.client_request_id ?? body.clientRequestId;
+  return String(raw || "").trim();
 }
 
 // ========== MERCHANTS ==========
@@ -165,10 +177,13 @@ router.post("/transactions/charge", async (req: Request, res: Response, next: Ne
     const wallet_id = Number(req.body?.wallet_id);
     const merchant_id = Number(req.body?.merchant_id);
     const amount = String(req.body?.amount || "");
-    const client_request_id = String(req.body?.client_request_id || "");
+    const client_request_id = readClientRequestId(req.body);
 
     if (!wallet_id || !merchant_id) {
       throw badRequest("wallet_id and merchant_id are required");
+    }
+    if (!client_request_id) {
+      throw badRequest("client_request_id is required");
     }
 
     const transaction = await transactionsLogic.charge({
@@ -189,10 +204,13 @@ router.post("/transactions/refund", async (req: Request, res: Response, next: Ne
     const merchant_id = Number(req.body?.merchant_id);
     const amount = String(req.body?.amount || "");
     const original_transaction_id = Number(req.body?.original_transaction_id);
-    const client_request_id = String(req.body?.client_request_id || "");
+    const client_request_id = readClientRequestId(req.body);
 
     if (!wallet_id || !merchant_id || !original_transaction_id) {
       throw badRequest("wallet_id, merchant_id and original_transaction_id are required");
+    }
+    if (!client_request_id) {
+      throw badRequest("client_request_id is required");
     }
 
     const transaction = await transactionsLogic.refund({

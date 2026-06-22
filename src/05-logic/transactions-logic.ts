@@ -9,6 +9,12 @@ import {
 } from "../03-models/wallet-domain-models";
 import merchantsLogic from "./merchants-logic";
 import walletsLogic from "./wallets-logic";
+import {
+  creditWallet,
+  debitWallet,
+  lockWallet,
+  sumCompletedRefunds,
+} from "./wallet-money-logic";
 
 function mapTransaction(row: Record<string, unknown>): TransactionModel {
   return {
@@ -171,12 +177,12 @@ async function charge(input: {
       return existing;
     }
 
-    const wallet = await walletsLogic.getWalletForUpdate(client, input.wallet_id);
+    const wallet = await lockWallet(client, input.wallet_id);
     if (!wallet) {
       throw notFound("Wallet", input.wallet_id);
     }
 
-    const merchant = await merchantsLogic.getMerchantById(input.merchant_id);
+    const merchant = await merchantsLogic.lockMerchantForUpdate(client, input.merchant_id);
     if (!merchant) {
       throw notFound("Merchant", input.merchant_id);
     }
@@ -241,12 +247,7 @@ async function charge(input: {
       [wallet.id, transaction.id, amount, wallet.currency]
     );
 
-    await client.query(
-      `UPDATE wallets
-       SET balance = balance - $2::numeric, version = version + 1, updated_at = NOW()
-       WHERE id = $1`,
-      [wallet.id, amount]
-    );
+    await debitWallet(client, wallet.id, amount, wallet.version);
 
     await client.query("COMMIT");
     return transaction;
@@ -289,12 +290,12 @@ async function refund(input: {
       return existing;
     }
 
-    const wallet = await walletsLogic.getWalletForUpdate(client, input.wallet_id);
+    const wallet = await lockWallet(client, input.wallet_id);
     if (!wallet) {
       throw notFound("Wallet", input.wallet_id);
     }
 
-    const merchant = await merchantsLogic.getMerchantById(input.merchant_id);
+    const merchant = await merchantsLogic.lockMerchantForUpdate(client, input.merchant_id);
     if (!merchant) {
       throw notFound("Merchant", input.merchant_id);
     }
@@ -344,13 +345,7 @@ async function refund(input: {
       return declined;
     }
 
-    const refundTotalResult = await client.query(
-      `SELECT COALESCE(SUM(amount), 0) AS total
-       FROM transactions
-       WHERE original_transaction_id = $1 AND type = 'refund' AND status = 'completed'`,
-      [input.original_transaction_id]
-    );
-    const alreadyRefunded = Number(refundTotalResult.rows[0].total);
+    const alreadyRefunded = await sumCompletedRefunds(client, input.original_transaction_id);
     const originalAmount = Number(original.amount);
     if (alreadyRefunded + Number(amount) > originalAmount) {
       const declined = await insertDeclinedTransaction(client, {
@@ -391,12 +386,7 @@ async function refund(input: {
       [wallet.id, transaction.id, amount, wallet.currency]
     );
 
-    await client.query(
-      `UPDATE wallets
-       SET balance = balance + $2::numeric, version = version + 1, updated_at = NOW()
-       WHERE id = $1`,
-      [wallet.id, amount]
-    );
+    await creditWallet(client, wallet.id, amount, wallet.version);
 
     await client.query("COMMIT");
     return transaction;
