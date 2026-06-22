@@ -1,149 +1,222 @@
 # PayPlus Wallet API
 
-Backend service for wallet & transaction processing — built with the same layered architecture as EasyBox.
+Backend service for wallet & transaction processing (PayPlus Senior Backend Assignment).
 
-## Architecture (like EasyBox)
+**Stack:** Node.js · TypeScript · Express · PostgreSQL · Docker
 
-```
-src/
-  01-utils/        → config, logging, AppError helpers
-  02-middleware/   → errors-handler
-  03-models/       → TypeScript interfaces
-  04-dal/          → database connection (PostgreSQL pool)
-  05-logic/        → business logic (merchants, wallets, transactions, ledger)
-  06-controllers/  → Express routes
-  app.ts           → entry point
-database_scripts/  → SQL migrations (like EasyBox database_scripts/)
-scripts/           → run-sql-scripts.ts (like EasyBox npm run run-sql)
-```
-
-| EasyBox | PayPlus Wallet |
-|---------|----------------|
-| SQL Server + `mssql` | PostgreSQL + `pg` |
-| `upload/04-dal/dal.ts` | `04-dal/dal.ts` |
-| `05-logic/*-logic.ts` | `05-logic/*-logic.ts` |
-| `06-controllers/car-wash-controller.ts` | `06-controllers/wallet-controller.ts` |
-| SQL Server stored procedures | `database_scripts/04_stored_procedures.sql` — Node calls `SELECT * FROM sp_*()` |
+---
 
 ## Prerequisites
 
-- Node.js 20+
-- Docker Desktop (for local PostgreSQL)
+- **Node.js** 20+
+- **Docker Desktop** (must be running — provides PostgreSQL)
 
-## Quick start
+---
+
+## Environment variables
+
+Create a `.env` file in the project root (not committed to git):
+
+```
+PORT=3000
+DATABASE_URL=postgresql://payplus:payplus@localhost:5432/payplus_wallet
+```
+
+---
+
+## How to run
+
+### First time setup
 
 ```bash
-# 1. Start PostgreSQL
+# 1. Start PostgreSQL (runs in background via Docker)
 docker compose up -d
 
 # 2. Install dependencies
 npm install
 
-# 3. Environment
-copy .env.example .env
+# 3. Create .env file in project root with:
+#    PORT=3000
+#    DATABASE_URL=postgresql://payplus:payplus@localhost:5432/payplus_wallet
 
-# 4. Create tables
+# 4. Create tables, triggers, and stored procedures
 npm run run-sql
 
-# 5. Run API
+# 5. Start the API server
 npm run dev
 ```
 
-API: `http://localhost:3000`  
-Health: `GET http://localhost:3000/api/health`  
-**Swagger UI:** `http://localhost:3000/api-docs` — interactive API explorer (Try it out)
-
-### Using Swagger UI
-
-1. Start the API (`npm run dev`)
-2. Open **http://localhost:3000/api-docs** in your browser
-3. Pick an endpoint → **Try it out** → fill body → **Execute**
-4. Suggested flow: **Merchants** → **Wallets** → **Transactions (charge)** → **Ledger**
-
-Raw OpenAPI JSON: `GET http://localhost:3000/api-docs.json`
-
-## Example flow (Postman / curl)
+### Every time after that
 
 ```bash
-# Create merchant
-curl -X POST http://localhost:3000/api/merchants -H "Content-Type: application/json" -d "{\"name\":\"Coffee Shop\"}"
-
-# Create wallet with 100 ILS
-curl -X POST http://localhost:3000/api/wallets -H "Content-Type: application/json" -d "{\"owner_identity\":\"employee-1\",\"currency\":\"ILS\",\"initial_balance\":\"100.00\"}"
-
-# Charge 30 ILS
-curl -X POST http://localhost:3000/api/transactions/charge -H "Content-Type: application/json" -d "{\"wallet_id\":1,\"merchant_id\":1,\"amount\":\"30.00\",\"client_request_id\":\"req-charge-001\"}"
+docker compose up -d    # start DB if not already running
+npm run dev             # start API (keep this terminal open)
 ```
 
-## Database access
+> **Note:** Docker = database only. `npm run dev` = API server. Both are required.
 
-All SQL lives in **PostgreSQL stored procedures** (`database_scripts/04_stored_procedures.sql`).  
-The Node.js logic layer only calls procedures — no inline queries:
+### Verify it works
+
+| Check | URL |
+|-------|-----|
+| Health | http://localhost:3000/api/health → `"database": "connected"` |
+| Swagger UI | http://localhost:3000/api-docs |
+
+---
+
+## Test the API (Swagger — recommended)
+
+1. Open **http://localhost:3000/api-docs**
+2. Run in order:
+   - `POST /api/merchants` → create merchant, note `merchant.id`
+   - `POST /api/wallets` → create wallet with `"initial_balance": "100.00"`, note `wallet.id`
+   - `POST /api/transactions/charge` → use those ids + unique `client_request_id`
+   - `GET /api/wallets/{id}/ledger-entries` → see audit log
+
+### Example charge body
+
+```json
+{
+  "wallet_id": 1,
+  "merchant_id": 1,
+  "amount": "30.00",
+  "client_request_id": "req-charge-001"
+}
+```
+
+---
+
+## API endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/health` | Health check |
+| POST | `/api/merchants` | Create merchant |
+| GET | `/api/merchants` | List merchants |
+| GET | `/api/merchants/:id` | Get merchant |
+| PATCH | `/api/merchants/:id/status` | Activate / inactivate |
+| POST | `/api/wallets` | Create wallet |
+| GET | `/api/wallets` | List wallets |
+| GET | `/api/wallets/:id` | Get wallet + balance |
+| PATCH | `/api/wallets/:id/status` | Activate / inactivate |
+| POST | `/api/transactions/charge` | Charge wallet |
+| POST | `/api/transactions/refund` | Refund a charge |
+| GET | `/api/transactions/:id` | Get transaction |
+| GET | `/api/transactions` | List transactions (optional filters) |
+| GET | `/api/wallets/:id/ledger-entries` | Ledger for wallet |
+| GET | `/api/transactions/:id/ledger-entries` | Ledger for transaction |
+
+**Error format** (assignment requirement):
+
+```json
+{
+  "error": {
+    "code": "insufficient_funds",
+    "message": "Wallet does not have enough available balance",
+    "status": 409,
+    "details": { "wallet_id": 1, "available_balance": "20.00", "requested_amount": "80.00" }
+  }
+}
+```
+
+---
+
+## Automated safety tests
+
+With the API running (`npm run dev`), in a **second terminal**:
+
+```bash
+npm run test:concurrency    # two parallel 80 ILS charges on 100 ILS wallet → one succeeds
+npm run test:idempotency    # duplicate client_request_id → single charge
+npm run test:double-refund  # refund total cannot exceed original charge
+```
+
+---
+
+## Architecture
+
+```
+src/
+  01-utils/        config, logging, AppError, Swagger
+  02-middleware/   errors-handler
+  03-models/       TypeScript interfaces
+  04-dal/          PostgreSQL connection pool (pg)
+  05-logic/        business logic — calls stored procedures only
+  06-controllers/  Express routes
+  app.ts           entry point
+
+database_scripts/
+  01_create_wallet_tables.sql
+  02_ledger_append_only.sql
+  03_financial_safety.sql
+  04_stored_procedures.sql    ← all SQL lives here
+```
+
+**Database access:** Node.js does not contain inline SQL. All queries run via PostgreSQL stored procedures (`sp_*`), called as:
 
 ```typescript
 await pool.query(`SELECT * FROM sp_merchant_create($1)`, [name]);
-await client.query(`SELECT * FROM sp_wallet_lock_for_update($1)`, [walletId]);
 ```
 
-After pulling changes, run `npm run run-sql` to create/update procedures.
+Re-run `npm run run-sql` after pulling DB script changes.
+
+---
 
 ## Key design decisions
 
-- **Money**: `NUMERIC(18,2)` in PostgreSQL, exposed as strings in API
-- **Concurrency**: `SELECT ... FOR UPDATE` on wallet (and merchant) inside `BEGIN/COMMIT`
-- **Optimistic locking**: `wallets.version` checked on every balance update
-- **Idempotency**: unique `client_request_id` + lookup before insert + race fallback
-- **Ledger**: append-only (DB trigger blocks UPDATE/DELETE); only `completed` transactions create entries
-- **Refund cap**: sum of completed refunds cannot exceed original charge amount
-- **DB constraints**: `CHECK (balance >= 0)`, `CHECK (amount > 0)`, status enums
-- **Errors**: PayPlus structured format via `AppError` + `errors-handler`
+| Topic | Approach |
+|-------|----------|
+| Money | `NUMERIC(18,2)` in DB, strings in API |
+| Concurrency | `FOR UPDATE` row lock on wallet + merchant inside `BEGIN/COMMIT` |
+| Idempotency | `UNIQUE(client_request_id)` + return existing transaction on retry |
+| Optimistic lock | `wallets.version` checked on every balance update |
+| Ledger | Append-only (trigger blocks UPDATE/DELETE); only `completed` txs |
+| Refunds | Sum of completed refunds ≤ original charge amount |
+| DB constraints | `CHECK (balance >= 0)`, `CHECK (amount > 0)`, status enums |
 
-## Financial safety guarantees
-
-| Scenario | Protection |
-|----------|------------|
-| Two parallel charges on same wallet | `FOR UPDATE` row lock — second request waits, then sees updated balance |
-| Network retry with same `client_request_id` | `UNIQUE(client_request_id)` + return existing transaction |
-| Partial failure mid-charge | Single DB transaction — `ROLLBACK` on any error |
-| Negative balance | App check + `UPDATE … WHERE balance >= amount` + `CHECK (balance >= 0)` |
-| Double refund | Sum completed refunds + new amount ≤ original charge |
-| Ledger tampering | Append-only trigger on `ledger_entries` |
-| Merchant deactivated mid-payment | Merchant row locked with `FOR UPDATE` inside payment transaction |
-
-### Charge flow (inside one DB transaction)
+### Charge flow (single DB transaction)
 
 ```
 BEGIN
   → check idempotency (client_request_id)
-  → SELECT wallet FOR UPDATE
-  → SELECT merchant FOR UPDATE
-  → validate balance
-  → INSERT transaction (completed)
-  → INSERT ledger entry
-  → UPDATE wallet (balance -= amount, version++)
+  → lock wallet + merchant (FOR UPDATE)
+  → validate balance / status
+  → insert transaction + ledger entry
+  → debit wallet (version++)
 COMMIT
 ```
 
-### Interview talking points
-
-1. **Concurrency** — `FOR UPDATE` ensures only one request updates the wallet at a time
-2. **Idempotency** — safe retries from PayPlus without double charge
-3. **Immutable ledger** — audit trail; corrections are new entries, never UPDATE/DELETE
-4. **Defense in depth** — validation in app + constraints in DB
-5. **Refund validation** — prevents refunding more than was charged
-
-### Manual safety tests
-
-With the API running (`npm run dev`):
-
-```bash
-npm run test:concurrency   # 100 ILS, two parallel 80 ILS charges → one succeeds, balance 20
-npm run test:idempotency   # same client_request_id twice → single charge
-npm run test:double-refund # two 60 ILS refunds on 100 charge → second rejected
-```
+---
 
 ## Assumptions
 
-- Single currency per wallet (charge must match wallet currency)
-- Declined transactions are persisted without ledger movement
-- Refund cannot exceed remaining refundable amount on original charge
+- Single currency per wallet; charge uses wallet currency
+- `client_request_id` is required on charge and refund
+- Declined transactions are saved but do not create ledger entries
+- Inactive merchant or wallet → transaction declined, no balance change
+- Refund must reference a completed charge on the same wallet
+
+---
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `database: disconnected` | Run `docker compose up -d`, then `npm run run-sql` |
+| `EADDRINUSE` port 3000 | Stop other process on port 3000, or change `PORT` in `.env` |
+| `function sp_* does not exist` | Run `npm run run-sql` |
+| Docker not running | Open Docker Desktop, wait for "Engine running" |
+
+---
+
+## npm scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start API with hot reload |
+| `npm start` | Start API (production) |
+| `npm run run-sql` | Apply all `database_scripts/*.sql` |
+| `npm run typecheck` | TypeScript compile check |
+| `npm run test:concurrency` | Concurrency test script |
+| `npm run test:idempotency` | Idempotency test script |
+| `npm run test:double-refund` | Double-refund test script |
