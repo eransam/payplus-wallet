@@ -10,15 +10,23 @@ import walletController from "./06-controllers/wallet-controller";
 import { healthController } from "./06-controllers/health-controller";
 import logger from "./01-utils/log-helper";
 import config from "./01-utils/config";
+import { setupSwagger } from "./01-utils/swagger";
 
 const environment = process.env.NODE_ENV || "development";
 const server = express();
 const PORT = config.port;
 
 server.use(cors());
-server.use(helmet());
+server.use(
+  helmet({
+    // Swagger UI needs inline scripts/styles
+    contentSecurityPolicy: false,
+  })
+);
 server.use(express.json({ limit: "10mb" }));
 server.use(express.urlencoded({ extended: true }));
+
+setupSwagger(server);
 
 dal.connect().catch((error) => {
   logger.error("Initial DB connection failed:", error);
@@ -38,4 +46,5 @@ server.use(errorsHandler);
 
 server.listen(PORT, () => {
   logger.info(`PayPlus Wallet API running on port ${PORT} (${environment})`);
+  logger.info(`Swagger UI: http://localhost:${PORT}/api-docs`);
 });

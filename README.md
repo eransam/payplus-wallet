@@ -50,7 +50,17 @@ npm run dev
 ```
 
 API: `http://localhost:3000`  
-Health: `GET http://localhost:3000/api/health`
+Health: `GET http://localhost:3000/api/health`  
+**Swagger UI:** `http://localhost:3000/api-docs` — interactive API explorer (Try it out)
+
+### Using Swagger UI
+
+1. Start the API (`npm run dev`)
+2. Open **http://localhost:3000/api-docs** in your browser
+3. Pick an endpoint → **Try it out** → fill body → **Execute**
+4. Suggested flow: **Merchants** → **Wallets** → **Transactions (charge)** → **Ledger**
+
+Raw OpenAPI JSON: `GET http://localhost:3000/api-docs.json`
 
 ## Example flow (Postman / curl)
 
