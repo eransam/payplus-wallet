@@ -15,26 +15,17 @@ function mapRow(row: Record<string, unknown>): LedgerEntryModel {
 
 async function listByWallet(walletId: number, limit = 100, offset = 0): Promise<LedgerEntryModel[]> {
   const pool = await dal.getPool();
-  const result = await pool.query(
-    `SELECT id, wallet_id, transaction_id, type, amount, currency, created_at
-     FROM ledger_entries
-     WHERE wallet_id = $1
-     ORDER BY id DESC
-     LIMIT $2 OFFSET $3`,
-    [walletId, limit, offset]
-  );
+  const result = await pool.query(`SELECT * FROM sp_ledger_list_by_wallet($1, $2, $3)`, [
+    walletId,
+    limit,
+    offset,
+  ]);
   return result.rows.map(mapRow);
 }
 
 async function listByTransaction(transactionId: number): Promise<LedgerEntryModel[]> {
   const pool = await dal.getPool();
-  const result = await pool.query(
-    `SELECT id, wallet_id, transaction_id, type, amount, currency, created_at
-     FROM ledger_entries
-     WHERE transaction_id = $1
-     ORDER BY id ASC`,
-    [transactionId]
-  );
+  const result = await pool.query(`SELECT * FROM sp_ledger_list_by_transaction($1)`, [transactionId]);
   return result.rows.map(mapRow);
 }
 

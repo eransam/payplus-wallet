@@ -15,54 +15,33 @@ function mapRow(row: Record<string, unknown>): MerchantModel {
 
 async function createMerchant(name: string): Promise<MerchantModel> {
   const pool = await dal.getPool();
-  const result = await pool.query(
-    `INSERT INTO merchants (name) VALUES ($1)
-     RETURNING id, name, status, created_at, updated_at`,
-    [name.trim()]
-  );
+  const result = await pool.query(`SELECT * FROM sp_merchant_create($1)`, [name.trim()]);
   return mapRow(result.rows[0]);
 }
 
 async function getMerchantById(id: number): Promise<MerchantModel | null> {
   const pool = await dal.getPool();
-  const result = await pool.query(
-    `SELECT id, name, status, created_at, updated_at FROM merchants WHERE id = $1`,
-    [id]
-  );
+  const result = await pool.query(`SELECT * FROM sp_merchant_get_by_id($1)`, [id]);
   return result.rows[0] ? mapRow(result.rows[0]) : null;
 }
 
-/** Row lock inside payment transaction — status cannot flip mid-charge */
 async function lockMerchantForUpdate(
   client: PoolClient,
   id: number
 ): Promise<MerchantModel | null> {
-  const result = await client.query(
-    `SELECT id, name, status, created_at, updated_at
-     FROM merchants WHERE id = $1 FOR UPDATE`,
-    [id]
-  );
+  const result = await client.query(`SELECT * FROM sp_merchant_lock_for_update($1)`, [id]);
   return result.rows[0] ? mapRow(result.rows[0]) : null;
 }
 
 async function listMerchants(limit = 50, offset = 0): Promise<MerchantModel[]> {
   const pool = await dal.getPool();
-  const result = await pool.query(
-    `SELECT id, name, status, created_at, updated_at
-     FROM merchants ORDER BY id DESC LIMIT $1 OFFSET $2`,
-    [limit, offset]
-  );
+  const result = await pool.query(`SELECT * FROM sp_merchant_list($1, $2)`, [limit, offset]);
   return result.rows.map(mapRow);
 }
 
 async function updateMerchantStatus(id: number, status: EntityStatus): Promise<MerchantModel> {
   const pool = await dal.getPool();
-  const result = await pool.query(
-    `UPDATE merchants SET status = $2, updated_at = NOW()
-     WHERE id = $1
-     RETURNING id, name, status, created_at, updated_at`,
-    [id, status]
-  );
+  const result = await pool.query(`SELECT * FROM sp_merchant_update_status($1, $2)`, [id, status]);
   if (!result.rows[0]) {
     throw notFound("Merchant", id);
   }

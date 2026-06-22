@@ -1,7 +1,7 @@
 import { PoolClient } from "pg";
 import dal from "../04-dal/dal";
 import logger from "../01-utils/log-helper";
-import { AppError, badRequest, insufficientFunds, notFound } from "../01-utils/app-error";
+import { AppError, badRequest, notFound } from "../01-utils/app-error";
 import {
   TransactionModel,
   TransactionStatus,
@@ -48,9 +48,7 @@ async function resolveIdempotentTransaction(
 ): Promise<TransactionModel | null> {
   const pool = await dal.getPool();
   const result = await pool.query(
-    `SELECT id, wallet_id, merchant_id, type, amount, currency, status,
-            decline_reason, original_transaction_id, client_request_id, created_at, updated_at
-     FROM transactions WHERE client_request_id = $1`,
+    `SELECT * FROM sp_transaction_find_by_client_request_id($1)`,
     [clientRequestId]
   );
   return result.rows[0] ? mapTransaction(result.rows[0]) : null;
@@ -61,9 +59,7 @@ async function findByClientRequestId(
   clientRequestId: string
 ): Promise<TransactionModel | null> {
   const result = await client.query(
-    `SELECT id, wallet_id, merchant_id, type, amount, currency, status,
-            decline_reason, original_transaction_id, client_request_id, created_at, updated_at
-     FROM transactions WHERE client_request_id = $1`,
+    `SELECT * FROM sp_transaction_find_by_client_request_id($1)`,
     [clientRequestId]
   );
   return result.rows[0] ? mapTransaction(result.rows[0]) : null;
@@ -71,12 +67,7 @@ async function findByClientRequestId(
 
 async function getTransactionById(id: number): Promise<TransactionModel | null> {
   const pool = await dal.getPool();
-  const result = await pool.query(
-    `SELECT id, wallet_id, merchant_id, type, amount, currency, status,
-            decline_reason, original_transaction_id, client_request_id, created_at, updated_at
-     FROM transactions WHERE id = $1`,
-    [id]
-  );
+  const result = await pool.query(`SELECT * FROM sp_transaction_get_by_id($1)`, [id]);
   return result.rows[0] ? mapTransaction(result.rows[0]) : null;
 }
 
@@ -88,35 +79,15 @@ async function listTransactions(filters: {
   offset?: number;
 }): Promise<TransactionModel[]> {
   const pool = await dal.getPool();
-  const conditions: string[] = [];
-  const params: unknown[] = [];
-
-  if (filters.wallet_id) {
-    params.push(filters.wallet_id);
-    conditions.push(`wallet_id = $${params.length}`);
-  }
-  if (filters.merchant_id) {
-    params.push(filters.merchant_id);
-    conditions.push(`merchant_id = $${params.length}`);
-  }
-  if (filters.status) {
-    params.push(filters.status);
-    conditions.push(`status = $${params.length}`);
-  }
-
-  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-  params.push(filters.limit ?? 50);
-  const limitIdx = params.length;
-  params.push(filters.offset ?? 0);
-  const offsetIdx = params.length;
-
   const result = await pool.query(
-    `SELECT id, wallet_id, merchant_id, type, amount, currency, status,
-            decline_reason, original_transaction_id, client_request_id, created_at, updated_at
-     FROM transactions ${where}
-     ORDER BY id DESC
-     LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
-    params
+    `SELECT * FROM sp_transaction_list($1, $2, $3, $4, $5)`,
+    [
+      filters.wallet_id ?? null,
+      filters.merchant_id ?? null,
+      filters.status ?? null,
+      filters.limit ?? 50,
+      filters.offset ?? 0,
+    ]
   );
   return result.rows.map(mapTransaction);
 }
@@ -135,12 +106,7 @@ async function insertDeclinedTransaction(
   }
 ): Promise<TransactionModel> {
   const result = await client.query(
-    `INSERT INTO transactions
-       (wallet_id, merchant_id, type, amount, currency, status, decline_reason,
-        original_transaction_id, client_request_id)
-     VALUES ($1, $2, $3, $4, $5, 'declined', $6, $7, $8)
-     RETURNING id, wallet_id, merchant_id, type, amount, currency, status,
-               decline_reason, original_transaction_id, client_request_id, created_at, updated_at`,
+    `SELECT * FROM sp_transaction_insert_declined($1, $2, $3, $4, $5, $6, $7, $8)`,
     [
       data.wallet_id,
       data.merchant_id,
@@ -232,20 +198,18 @@ async function charge(input: {
     }
 
     const txResult = await client.query(
-      `INSERT INTO transactions
-         (wallet_id, merchant_id, type, amount, currency, status, client_request_id)
-       VALUES ($1, $2, 'charge', $3, $4, 'completed', $5)
-       RETURNING id, wallet_id, merchant_id, type, amount, currency, status,
-                 decline_reason, original_transaction_id, client_request_id, created_at, updated_at`,
+      `SELECT * FROM sp_transaction_insert_completed_charge($1, $2, $3, $4, $5)`,
       [wallet.id, merchant.id, amount, wallet.currency, clientRequestId]
     );
     const transaction = mapTransaction(txResult.rows[0]);
 
-    await client.query(
-      `INSERT INTO ledger_entries (wallet_id, transaction_id, type, amount, currency)
-       VALUES ($1, $2, 'charge', $3, $4)`,
-      [wallet.id, transaction.id, amount, wallet.currency]
-    );
+    await client.query(`SELECT sp_ledger_insert($1, $2, $3, $4, $5)`, [
+      wallet.id,
+      transaction.id,
+      "charge",
+      amount,
+      wallet.currency,
+    ]);
 
     await debitWallet(client, wallet.id, amount, wallet.version);
 
@@ -300,11 +264,9 @@ async function refund(input: {
       throw notFound("Merchant", input.merchant_id);
     }
 
-    const originalResult = await client.query(
-      `SELECT id, wallet_id, merchant_id, type, amount, currency, status
-       FROM transactions WHERE id = $1 FOR UPDATE`,
-      [input.original_transaction_id]
-    );
+    const originalResult = await client.query(`SELECT * FROM sp_transaction_lock_by_id($1)`, [
+      input.original_transaction_id,
+    ]);
     const original = originalResult.rows[0];
     if (!original) {
       throw notFound("Transaction", input.original_transaction_id);
@@ -363,12 +325,7 @@ async function refund(input: {
     }
 
     const txResult = await client.query(
-      `INSERT INTO transactions
-         (wallet_id, merchant_id, type, amount, currency, status,
-          original_transaction_id, client_request_id)
-       VALUES ($1, $2, 'refund', $3, $4, 'completed', $5, $6)
-       RETURNING id, wallet_id, merchant_id, type, amount, currency, status,
-                 decline_reason, original_transaction_id, client_request_id, created_at, updated_at`,
+      `SELECT * FROM sp_transaction_insert_completed_refund($1, $2, $3, $4, $5, $6)`,
       [
         wallet.id,
         merchant.id,
@@ -380,11 +337,13 @@ async function refund(input: {
     );
     const transaction = mapTransaction(txResult.rows[0]);
 
-    await client.query(
-      `INSERT INTO ledger_entries (wallet_id, transaction_id, type, amount, currency)
-       VALUES ($1, $2, 'refund', $3, $4)`,
-      [wallet.id, transaction.id, amount, wallet.currency]
-    );
+    await client.query(`SELECT sp_ledger_insert($1, $2, $3, $4, $5)`, [
+      wallet.id,
+      transaction.id,
+      "refund",
+      amount,
+      wallet.currency,
+    ]);
 
     await creditWallet(client, wallet.id, amount, wallet.version);
 

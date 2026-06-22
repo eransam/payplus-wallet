@@ -37,43 +37,29 @@ async function createWallet(data: {
   const balance = data.initial_balance ? parseAmount(data.initial_balance) : "0.00";
 
   const pool = await dal.getPool();
-  const result = await pool.query(
-    `INSERT INTO wallets (owner_identity, currency, balance)
-     VALUES ($1, $2, $3)
-     RETURNING id, owner_identity, currency, balance, status, version, created_at, updated_at`,
-    [data.owner_identity.trim(), currency, balance]
-  );
+  const result = await pool.query(`SELECT * FROM sp_wallet_create($1, $2, $3)`, [
+    data.owner_identity.trim(),
+    currency,
+    balance,
+  ]);
   return mapRow(result.rows[0]);
 }
 
 async function getWalletById(id: number): Promise<WalletModel | null> {
   const pool = await dal.getPool();
-  const result = await pool.query(
-    `SELECT id, owner_identity, currency, balance, status, version, created_at, updated_at
-     FROM wallets WHERE id = $1`,
-    [id]
-  );
+  const result = await pool.query(`SELECT * FROM sp_wallet_get_by_id($1)`, [id]);
   return result.rows[0] ? mapRow(result.rows[0]) : null;
 }
 
 async function listWallets(limit = 50, offset = 0): Promise<WalletModel[]> {
   const pool = await dal.getPool();
-  const result = await pool.query(
-    `SELECT id, owner_identity, currency, balance, status, version, created_at, updated_at
-     FROM wallets ORDER BY id DESC LIMIT $1 OFFSET $2`,
-    [limit, offset]
-  );
+  const result = await pool.query(`SELECT * FROM sp_wallet_list($1, $2)`, [limit, offset]);
   return result.rows.map(mapRow);
 }
 
 async function updateWalletStatus(id: number, status: EntityStatus): Promise<WalletModel> {
   const pool = await dal.getPool();
-  const result = await pool.query(
-    `UPDATE wallets SET status = $2, updated_at = NOW()
-     WHERE id = $1
-     RETURNING id, owner_identity, currency, balance, status, version, created_at, updated_at`,
-    [id, status]
-  );
+  const result = await pool.query(`SELECT * FROM sp_wallet_update_status($1, $2)`, [id, status]);
   if (!result.rows[0]) {
     throw notFound("Wallet", id);
   }
@@ -81,11 +67,7 @@ async function updateWalletStatus(id: number, status: EntityStatus): Promise<Wal
 }
 
 async function getWalletForUpdate(client: PoolClient, id: number): Promise<WalletModel | null> {
-  const result = await client.query(
-    `SELECT id, owner_identity, currency, balance, status, version, created_at, updated_at
-     FROM wallets WHERE id = $1 FOR UPDATE`,
-    [id]
-  );
+  const result = await client.query(`SELECT * FROM sp_wallet_lock_for_update($1)`, [id]);
   return result.rows[0] ? mapRow(result.rows[0]) : null;
 }
 

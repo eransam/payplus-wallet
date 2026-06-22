@@ -23,7 +23,7 @@ scripts/           → run-sql-scripts.ts (like EasyBox npm run run-sql)
 | `upload/04-dal/dal.ts` | `04-dal/dal.ts` |
 | `05-logic/*-logic.ts` | `05-logic/*-logic.ts` |
 | `06-controllers/car-wash-controller.ts` | `06-controllers/wallet-controller.ts` |
-| Stored procedures | SQL in logic layer + DB transactions |
+| SQL Server stored procedures | `database_scripts/04_stored_procedures.sql` — Node calls `SELECT * FROM sp_*()` |
 
 ## Prerequisites
 
@@ -74,6 +74,18 @@ curl -X POST http://localhost:3000/api/wallets -H "Content-Type: application/jso
 # Charge 30 ILS
 curl -X POST http://localhost:3000/api/transactions/charge -H "Content-Type: application/json" -d "{\"wallet_id\":1,\"merchant_id\":1,\"amount\":\"30.00\",\"client_request_id\":\"req-charge-001\"}"
 ```
+
+## Database access
+
+All SQL lives in **PostgreSQL stored procedures** (`database_scripts/04_stored_procedures.sql`).  
+The Node.js logic layer only calls procedures — no inline queries:
+
+```typescript
+await pool.query(`SELECT * FROM sp_merchant_create($1)`, [name]);
+await client.query(`SELECT * FROM sp_wallet_lock_for_update($1)`, [walletId]);
+```
+
+After pulling changes, run `npm run run-sql` to create/update procedures.
 
 ## Key design decisions
 
