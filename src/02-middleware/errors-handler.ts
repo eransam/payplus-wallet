@@ -7,7 +7,7 @@ function errorsHandler(
   err: unknown,
   _request: Request,
   response: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void {
   if (err instanceof AppError) {
     response.status(err.status).json(err.toJSON());
@@ -39,7 +39,15 @@ function errorsHandler(
     return;
   }
 
-  next(err);
+  logger.error("Unknown error type", { err });
+
+  response.status(500).json({
+    error: {
+      code: "internal_error",
+      message: "Internal server error",
+      status: 500,
+    },
+  });
 }
 
 export default errorsHandler;

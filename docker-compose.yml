@@ -1,21 +1,47 @@
 services:
+  # שם השירות — משהו שאנחנו בוחרים
   db:
+    # איזה image (תמונה) אנחנו משתמשים בו
     image: postgres:16-alpine
+    # שם הקונטיינר — משהו שאנחנו בוחרים
     container_name: payplus-wallet-db
+    # מה שאנחנו רוצים שיקרה אם השירות ייפגם
     restart: unless-stopped
+    # משתני סביבה שאנחנו משתמשים בהם
     environment:
       POSTGRES_USER: payplus
       POSTGRES_PASSWORD: payplus
       POSTGRES_DB: payplus_wallet
+    # פורטים — חיבור מהמחשב לקונטיינר
     ports:
       - "5432:5432"
+    # מקום אחסון בדיסק מחוץ לקונטיינר
+    # payplus_pg_data — ה-volume (מחוץ לקונטיינר)
+    # /var/lib/postgresql/data — הנתיב בתוך הקונטיינר
     volumes:
       - payplus_pg_data:/var/lib/postgresql/data
+    # בדיקה שהשירות פעיל
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U payplus -d payplus_wallet"]
       interval: 5s
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    container_name: payplus-wallet-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - payplus_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+# הגדרת ה-volumes (מקום אחסון קבוע מחוץ לקונטיינר)
 volumes:
   payplus_pg_data:
+  payplus_redis_data:

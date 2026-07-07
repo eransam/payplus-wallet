@@ -2,11 +2,13 @@ class Config {
   isDevelopment: boolean;
   port: number;
   databaseUrl: string;
+  redisUrl: string;
 
   constructor() {
     this.isDevelopment = false;
     this.port = 3000;
     this.databaseUrl = "";
+    this.redisUrl = "";
   }
 }
 
@@ -18,6 +20,7 @@ class DevelopmentConfig extends Config {
     this.databaseUrl =
       process.env.DATABASE_URL ||
       "postgresql://payplus:payplus@localhost:5432/payplus_wallet";
+    this.redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
   }
 }
 
@@ -27,6 +30,7 @@ class ProductionConfig extends Config {
     this.isDevelopment = false;
     this.port = Number(process.env.PORT) || 3000;
     this.databaseUrl = process.env.DATABASE_URL || "";
+    this.redisUrl = process.env.REDIS_URL || "";
   }
 }
 

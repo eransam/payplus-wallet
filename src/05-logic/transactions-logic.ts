@@ -9,6 +9,7 @@ import {
 } from "../03-models/wallet-domain-models";
 import merchantsLogic from "./merchants-logic";
 import walletsLogic from "./wallets-logic";
+import idempotencyCache from "./idempotency-cache-logic";
 import {
   creditWallet,
   debitWallet,
@@ -46,12 +47,28 @@ function isUniqueClientRequestViolation(error: unknown): boolean {
 async function resolveIdempotentTransaction(
   clientRequestId: string
 ): Promise<TransactionModel | null> {
+  const cached = await idempotencyCache.get(clientRequestId);
+  if (cached) {
+    return cached;
+  }
+
   const pool = await dal.getPool();
   const result = await pool.query(
     `SELECT * FROM sp_transaction_find_by_client_request_id($1)`,
     [clientRequestId]
   );
-  return result.rows[0] ? mapTransaction(result.rows[0]) : null;
+  if (!result.rows[0]) {
+    return null;
+  }
+  return cacheAndReturn(clientRequestId, mapTransaction(result.rows[0]));
+}
+
+async function cacheAndReturn(
+  clientRequestId: string,
+  transaction: TransactionModel
+): Promise<TransactionModel> {
+  await idempotencyCache.set(clientRequestId, transaction);
+  return transaction;
 }
 
 async function findByClientRequestId(
@@ -133,6 +150,11 @@ async function charge(input: {
     throw badRequest("client_request_id is required");
   }
 
+  const cachedTransaction = await idempotencyCache.get(clientRequestId);
+  if (cachedTransaction) {
+    return cachedTransaction;
+  }
+
   const client = await dal.getClient();
   try {
     await client.query("BEGIN");
@@ -140,7 +162,7 @@ async function charge(input: {
     const existing = await findByClientRequestId(client, clientRequestId);
     if (existing) {
       await client.query("COMMIT");
-      return existing;
+      return cacheAndReturn(clientRequestId, existing);
     }
 
     const wallet = await lockWallet(client, input.wallet_id);
@@ -164,7 +186,7 @@ async function charge(input: {
         client_request_id: clientRequestId,
       });
       await client.query("COMMIT");
-      return declined;
+      return cacheAndReturn(clientRequestId, declined);
     }
 
     if (wallet.status !== "active") {
@@ -178,7 +200,7 @@ async function charge(input: {
         client_request_id: clientRequestId,
       });
       await client.query("COMMIT");
-      return declined;
+      return cacheAndReturn(clientRequestId, declined);
     }
 
     const balance = Number(wallet.balance);
@@ -194,7 +216,7 @@ async function charge(input: {
         client_request_id: clientRequestId,
       });
       await client.query("COMMIT");
-      return declined;
+      return cacheAndReturn(clientRequestId, declined);
     }
 
     const txResult = await client.query(
@@ -214,12 +236,12 @@ async function charge(input: {
     await debitWallet(client, wallet.id, amount, wallet.version);
 
     await client.query("COMMIT");
-    return transaction;
+    return cacheAndReturn(clientRequestId, transaction);
   } catch (error) {
     await client.query("ROLLBACK");
     if (isUniqueClientRequestViolation(error)) {
       const existing = await resolveIdempotentTransaction(clientRequestId);
-      if (existing) return existing;
+      if (existing) return cacheAndReturn(clientRequestId, existing);
     }
     if (error instanceof AppError) {
       throw error;
@@ -244,6 +266,11 @@ async function refund(input: {
     throw badRequest("client_request_id is required");
   }
 
+  const cachedTransaction = await idempotencyCache.get(clientRequestId);
+  if (cachedTransaction) {
+    return cachedTransaction;
+  }
+
   const client = await dal.getClient();
   try {
     await client.query("BEGIN");
@@ -251,7 +278,7 @@ async function refund(input: {
     const existing = await findByClientRequestId(client, clientRequestId);
     if (existing) {
       await client.query("COMMIT");
-      return existing;
+      return cacheAndReturn(clientRequestId, existing);
     }
 
     const wallet = await lockWallet(client, input.wallet_id);
@@ -284,7 +311,7 @@ async function refund(input: {
         client_request_id: clientRequestId,
       });
       await client.query("COMMIT");
-      return declined;
+      return cacheAndReturn(clientRequestId, declined);
     }
 
     if (Number(original.wallet_id) !== wallet.id) {
@@ -304,7 +331,7 @@ async function refund(input: {
         client_request_id: clientRequestId,
       });
       await client.query("COMMIT");
-      return declined;
+      return cacheAndReturn(clientRequestId, declined);
     }
 
     const alreadyRefunded = await sumCompletedRefunds(client, input.original_transaction_id);
@@ -321,7 +348,7 @@ async function refund(input: {
         client_request_id: clientRequestId,
       });
       await client.query("COMMIT");
-      return declined;
+      return cacheAndReturn(clientRequestId, declined);
     }
 
     const txResult = await client.query(
@@ -348,12 +375,12 @@ async function refund(input: {
     await creditWallet(client, wallet.id, amount, wallet.version);
 
     await client.query("COMMIT");
-    return transaction;
+    return cacheAndReturn(clientRequestId, transaction);
   } catch (error) {
     await client.query("ROLLBACK");
     if (isUniqueClientRequestViolation(error)) {
       const existing = await resolveIdempotentTransaction(clientRequestId);
-      if (existing) return existing;
+      if (existing) return cacheAndReturn(clientRequestId, existing);
     }
     if (error instanceof AppError) {
       throw error;
