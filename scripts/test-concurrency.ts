@@ -8,7 +8,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-const BASE = `http://localhost:${process.env.PORT || 3000}/api`;
+const BASE = `http://localhost:${process.env.PORT || 3001}/api`;
 
 async function jsonPost(path: string, body: unknown): Promise<{ status: number; data: any }> {
   const res = await fetch(`${BASE}${path}`, {

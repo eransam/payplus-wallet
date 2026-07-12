@@ -7,7 +7,7 @@ const swaggerSpec = {
     description:
       "Wallet & transaction processing API — merchants, wallets, charges, refunds, and ledger.",
   },
-  servers: [{ url: "http://localhost:3000", description: "Local development" }],
+  servers: [{ url: "http://localhost:3001", description: "Local development" }],
   tags: [
     { name: "Health", description: "Service health" },
     { name: "Merchants", description: "Merchant management" },

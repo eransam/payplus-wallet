@@ -1,58 +1,64 @@
-import { useState, type FormEvent } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
-import type { Merchant } from "../models/types";
-import { createMerchant } from "../services/api";
+import { useForm } from "react-hook-form";
+import { useCreateMerchant } from "../hooks/useMerchants";
+import {
+  createMerchantSchema,
+  type CreateMerchantFormValues,
+} from "../schemas/merchantSchema";
+import { translateApiError } from "../utils/apiErrors";
 
-type CreateMerchantFormProps = {
-  onMerchantCreated: (merchant: Merchant) => void;
-};
+/** react-hook-form + zod — גישה ראשית. להשוואה עם useState ראה /learn/react-hook-form */
+function CreateMerchantForm() {
+  const createMerchant = useCreateMerchant();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors },
+  } = useForm<CreateMerchantFormValues>({
+    resolver: zodResolver(createMerchantSchema),
+    defaultValues: { name: "" },
+  });
 
-function CreateMerchantForm({ onMerchantCreated }: CreateMerchantFormProps) {
-  const [name, setName] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    const trimmedName = name.trim();
-    if (!trimmedName) {
-      setError("Merchant name is required");
+  async function onSubmit(data: CreateMerchantFormValues) {
+    if (createMerchant.isPending) {
       return;
     }
 
     try {
-      setSubmitting(true);
-      setError("");
-      const merchant = await createMerchant(trimmedName);
-      onMerchantCreated(merchant);
-      setName("");
+      await createMerchant.mutateAsync(data.name);
+      reset();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create merchant");
-    } finally {
-      setSubmitting(false);
+      setError("root", {
+        message: translateApiError(err, "יצירת הסוחר נכשלה"),
+      });
     }
   }
 
   return (
-    <Form onSubmit={handleSubmit} className="mb-4">
-      <Form.Group className="mb-3">
-        <Form.Label>Merchant name</Form.Label>
+    <Form onSubmit={handleSubmit(onSubmit)} className="mb-4" noValidate>
+      <Form.Group className="mb-3" controlId="merchant-name">
+        <Form.Label>שם הסוחר</Form.Label>
         <Form.Control
           type="text"
-          placeholder="e.g. Coffee Shop"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          disabled={submitting}
+          placeholder='לדוגמה: "בית קפה"'
+          isInvalid={!!errors.name}
+          disabled={createMerchant.isPending}
+          {...register("name")}
         />
+        <Form.Control.Feedback type="invalid">
+          {errors.name?.message}
+        </Form.Control.Feedback>
       </Form.Group>
 
-      {error && <Alert variant="danger">{error}</Alert>}
+      {errors.root && <Alert variant="danger">{errors.root.message}</Alert>}
 
-      <Button type="submit" variant="primary" disabled={submitting}>
-        {submitting ? "Creating..." : "Create Merchant"}
+      <Button type="submit" variant="primary" disabled={createMerchant.isPending}>
+        {createMerchant.isPending ? "יוצר..." : "צור סוחר"}
       </Button>
     </Form>
   );

@@ -18,7 +18,7 @@ Backend service for wallet & transaction processing (PayPlus Senior Backend Assi
 Create a `.env` file in the project root (not committed to git):
 
 ```
-PORT=3000
+PORT=3001
 DATABASE_URL=postgresql://payplus:payplus@localhost:5432/payplus_wallet
 ```
 
@@ -36,7 +36,7 @@ docker compose up -d
 npm install
 
 # 3. Create .env file in project root with:
-#    PORT=3000
+#    PORT=3001
 #    DATABASE_URL=postgresql://payplus:payplus@localhost:5432/payplus_wallet
 
 # 4. Create tables, triggers, and stored procedures
@@ -59,14 +59,14 @@ npm run dev             # start API (keep this terminal open)
 
 | Check | URL |
 |-------|-----|
-| Health | http://localhost:3000/api/health → `"database": "connected"` |
-| Swagger UI | http://localhost:3000/api-docs |
+| Health | http://localhost:3001/api/health → `"database": "connected"` |
+| Swagger UI | http://localhost:3001/api-docs |
 
 ---
 
 ## Test the API (Swagger — recommended)
 
-1. Open **http://localhost:3000/api-docs**
+1. Open **http://localhost:3001/api-docs**
 2. Run in order:
    - `POST /api/merchants` → create merchant, note `merchant.id`
    - `POST /api/wallets` → create wallet with `"initial_balance": "100.00"`, note `wallet.id`
@@ -203,7 +203,7 @@ COMMIT
 | Problem | Solution |
 |---------|----------|
 | `database: disconnected` | Run `docker compose up -d`, then `npm run run-sql` |
-| `EADDRINUSE` port 3000 | Stop other process on port 3000, or change `PORT` in `.env` |
+| `EADDRINUSE` port 3001 | Stop other process on port 3001, or change `PORT` in `.env` |
 | `function sp_* does not exist` | Run `npm run run-sql` |
 | Docker not running | Open Docker Desktop, wait for "Engine running" |
 

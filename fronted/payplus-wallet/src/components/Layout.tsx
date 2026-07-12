@@ -14,19 +14,25 @@ function Layout({ children }: LayoutProps) {
       <Navbar bg="dark" variant="dark" expand="lg" className="mb-4">
         <Container>
           <Navbar.Brand as={NavLink} to="/">
-            PayPlus Wallet
+            PayPlus ארנק
           </Navbar.Brand>
           <Navbar.Toggle aria-controls="main-navbar" />
           <Navbar.Collapse id="main-navbar">
-            <Nav className="ms-auto">
+            <Nav className="me-auto">
               <Nav.Link as={NavLink} to="/" end>
-                Dashboard
+                לוח בקרה
               </Nav.Link>
               <Nav.Link as={NavLink} to="/merchants">
-                Merchants
+                סוחרים
               </Nav.Link>
               <Nav.Link as={NavLink} to="/wallets">
-                Wallets
+                ארנקים
+              </Nav.Link>
+              <Nav.Link as={NavLink} to="/transactions">
+                עסקאות
+              </Nav.Link>
+              <Nav.Link as={NavLink} to="/learn">
+                למידה
               </Nav.Link>
             </Nav>
           </Navbar.Collapse>

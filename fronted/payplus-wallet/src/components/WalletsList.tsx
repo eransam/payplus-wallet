@@ -1,38 +1,13 @@
-import { useEffect, useState } from "react";
 import Alert from "react-bootstrap/Alert";
 import Card from "react-bootstrap/Card";
 import Spinner from "react-bootstrap/Spinner";
 import Table from "react-bootstrap/Table";
-import type { Wallet } from "../models/types";
-import { getWallets } from "../services/api";
+import { useWallets } from "../hooks/useWallets";
 import CreateWalletForm from "./CreateWalletForm";
 import WalletRow from "./WalletRow";
 
 function WalletsList() {
-  const [wallets, setWallets] = useState<Wallet[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    async function loadWallets() {
-      try {
-        setLoading(true);
-        setError("");
-        const data = await getWallets();
-        setWallets(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load wallets");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadWallets();
-  }, []);
-
-  function handleWalletCreated(wallet: Wallet) {
-    setWallets((current) => [wallet, ...current]);
-  }
+  const { wallets, loading, error } = useWallets();
 
   if (loading) {
     return <Spinner animation="border" role="status" />;
@@ -44,20 +19,20 @@ function WalletsList() {
 
   return (
     <Card>
-      <Card.Header>Wallets</Card.Header>
+      <Card.Header>ארנקים</Card.Header>
       <Card.Body>
-        <CreateWalletForm onWalletCreated={handleWalletCreated} />
+        <CreateWalletForm />
 
         {wallets.length === 0 ? (
-          <Alert variant="info">No wallets yet. Create one above.</Alert>
+          <Alert variant="info">עדיין אין ארנקים. צור אחד למעלה.</Alert>
         ) : (
           <Table striped bordered hover>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Owner</th>
-                <th>Balance</th>
-                <th>Status</th>
+                <th>מזהה</th>
+                <th>בעלים</th>
+                <th>יתרה</th>
+                <th>סטטוס</th>
               </tr>
             </thead>
             <tbody>

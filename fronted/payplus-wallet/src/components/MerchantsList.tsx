@@ -1,38 +1,13 @@
-import { useEffect, useState } from "react";
 import Alert from "react-bootstrap/Alert";
 import Card from "react-bootstrap/Card";
 import Spinner from "react-bootstrap/Spinner";
 import Table from "react-bootstrap/Table";
-import type { Merchant } from "../models/types";
-import { getMerchants } from "../services/api";
+import { useMerchants } from "../hooks/useMerchants";
 import CreateMerchantForm from "./CreateMerchantForm";
 import MerchantRow from "./MerchantRow";
 
 function MerchantsList() {
-  const [merchants, setMerchants] = useState<Merchant[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    async function loadMerchants() {
-      try {
-        setLoading(true);
-        setError("");
-        const data = await getMerchants();
-        setMerchants(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load merchants");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadMerchants();
-  }, []);
-
-  function handleMerchantCreated(merchant: Merchant) {
-    setMerchants((current) => [merchant, ...current]);
-  }
+  const { merchants, loading, error } = useMerchants();
 
   if (loading) {
     return <Spinner animation="border" role="status" />;
@@ -44,19 +19,19 @@ function MerchantsList() {
 
   return (
     <Card>
-      <Card.Header>Merchants</Card.Header>
+      <Card.Header>סוחרים</Card.Header>
       <Card.Body>
-        <CreateMerchantForm onMerchantCreated={handleMerchantCreated} />
+        <CreateMerchantForm />
 
         {merchants.length === 0 ? (
-          <Alert variant="info">No merchants yet. Create one above.</Alert>
+          <Alert variant="info">עדיין אין סוחרים. צור אחד למעלה.</Alert>
         ) : (
           <Table striped bordered hover>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Status</th>
+                <th>מזהה</th>
+                <th>שם</th>
+                <th>סטטוס</th>
               </tr>
             </thead>
             <tbody>
