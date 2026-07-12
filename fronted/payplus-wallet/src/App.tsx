@@ -1,8 +1,13 @@
 import { Route, Routes } from "react-router-dom";
+import AppLayout from "./components/layout/AppLayout";
+import PublicLayout from "./components/layout/PublicLayout";
 import ErrorBoundary from "./components/ErrorBoundary";
-import Layout from "./components/Layout";
+import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardPage from "./pages/DashboardPage";
+import LandingPage from "./pages/LandingPage";
+import LoginPage from "./pages/LoginPage";
 import MerchantsPage from "./pages/MerchantsPage";
+import RegisterPage from "./pages/RegisterPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import WalletDetailsPage from "./pages/WalletDetailsPage";
 import WalletsPage from "./pages/WalletsPage";
@@ -23,31 +28,43 @@ import ValidationLearnPage from "./pages/learn/ValidationLearnPage";
 
 function App() {
   return (
-    <Layout>
-      <ErrorBoundary>
-        <Routes>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/merchants" element={<MerchantsPage />} />
-        <Route path="/wallets" element={<WalletsPage />} />
-        <Route path="/wallets/:id" element={<WalletDetailsPage />} />
-        <Route path="/transactions" element={<TransactionsPage />} />
-        <Route path="/learn" element={<LearnHubPage />} />
-        <Route path="/learn/basics" element={<BasicsLearnPage />} />
-        <Route path="/learn/api" element={<ApiLearnPage />} />
-        <Route path="/learn/forms" element={<FormsLearnPage />} />
-        <Route path="/learn/router" element={<RouterLearnPage />} />
-        <Route path="/learn/use-params" element={<UseParamsLearnPage />} />
-        <Route path="/learn/dropdown" element={<DropdownLearnPage />} />
-        <Route path="/learn/custom-hooks" element={<CustomHooksLearnPage />} />
-        <Route path="/learn/context" element={<ContextLearnPage />} />
-        <Route path="/learn/validation" element={<ValidationLearnPage />} />
-        <Route path="/learn/react-query" element={<ReactQueryLearnPage />} />
-        <Route path="/learn/testing" element={<TestingLearnPage />} />
-        <Route path="/learn/react-hook-form" element={<ReactHookFormLearnPage />} />
-        <Route path="/learn/error-boundary" element={<ErrorBoundaryLearnPage />} />
-        </Routes>
-      </ErrorBoundary>
-    </Layout>
+    <ErrorBoundary>
+      <Routes>
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+        </Route>
+
+        <Route
+          element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/merchants" element={<MerchantsPage />} />
+          <Route path="/wallets" element={<WalletsPage />} />
+          <Route path="/wallets/:id" element={<WalletDetailsPage />} />
+          <Route path="/transactions" element={<TransactionsPage />} />
+          <Route path="/learn" element={<LearnHubPage />} />
+          <Route path="/learn/basics" element={<BasicsLearnPage />} />
+          <Route path="/learn/api" element={<ApiLearnPage />} />
+          <Route path="/learn/forms" element={<FormsLearnPage />} />
+          <Route path="/learn/router" element={<RouterLearnPage />} />
+          <Route path="/learn/use-params" element={<UseParamsLearnPage />} />
+          <Route path="/learn/dropdown" element={<DropdownLearnPage />} />
+          <Route path="/learn/custom-hooks" element={<CustomHooksLearnPage />} />
+          <Route path="/learn/context" element={<ContextLearnPage />} />
+          <Route path="/learn/validation" element={<ValidationLearnPage />} />
+          <Route path="/learn/react-query" element={<ReactQueryLearnPage />} />
+          <Route path="/learn/testing" element={<TestingLearnPage />} />
+          <Route path="/learn/react-hook-form" element={<ReactHookFormLearnPage />} />
+          <Route path="/learn/error-boundary" element={<ErrorBoundaryLearnPage />} />
+        </Route>
+      </Routes>
+    </ErrorBoundary>
   );
 }
 

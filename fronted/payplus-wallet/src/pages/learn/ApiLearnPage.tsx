@@ -37,7 +37,7 @@ function ApiLearnPage() {
         />
       </ul>
 
-      <DemoLink to="/" label="ראה Health Status בלוח הבקרה" />
+      <DemoLink to="/dashboard" label="ראה Health Status בלוח הבקרה" />
     </LearnTopicLayout>
   );
 }

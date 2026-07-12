@@ -29,7 +29,7 @@ function HealthStatus() {
   }
 
   return (
-    <Card>
+    <Card className="eb-card">
       <Card.Header>סטטוס API</Card.Header>
       <Card.Body>
         <p>

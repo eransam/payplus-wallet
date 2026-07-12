@@ -31,7 +31,9 @@ function MerchantsList() {
               <tr>
                 <th>מזהה</th>
                 <th>שם</th>
+                <th>סה״כ התקבל</th>
                 <th>סטטוס</th>
+                <th>פעולות</th>
               </tr>
             </thead>
             <tbody>

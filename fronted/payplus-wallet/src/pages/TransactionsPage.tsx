@@ -18,7 +18,10 @@ function TransactionsPage() {
 
   return (
     <div>
-      <h1 className="mb-4">עסקאות</h1>
+      <header className="page-header">
+        <h1>עסקאות</h1>
+        <p>חיובים, החזרים והיסטוריית עסקאות</p>
+      </header>
 
       <Row className="g-4 mb-4">
         <Col md={6}>

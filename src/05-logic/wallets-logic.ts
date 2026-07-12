@@ -66,6 +66,38 @@ async function updateWalletStatus(id: number, status: EntityStatus): Promise<Wal
   return mapRow(result.rows[0]);
 }
 
+async function updateWallet(
+  id: number,
+  data: { owner_identity: string; status: EntityStatus },
+): Promise<WalletModel> {
+  const ownerIdentity = data.owner_identity.trim();
+  if (!ownerIdentity) {
+    throw new AppError("validation_error", "owner_identity is required", 400);
+  }
+  if (data.status !== "active" && data.status !== "inactive") {
+    throw new AppError("validation_error", "Invalid wallet status", 400);
+  }
+
+  const pool = await dal.getPool();
+  const result = await pool.query(`SELECT * FROM sp_wallet_update($1, $2, $3)`, [
+    id,
+    ownerIdentity,
+    data.status,
+  ]);
+  if (!result.rows[0]) {
+    throw notFound("Wallet", id);
+  }
+  return mapRow(result.rows[0]);
+}
+
+async function deleteWallet(id: number): Promise<void> {
+  const pool = await dal.getPool();
+  const result = await pool.query(`SELECT sp_wallet_delete($1) AS deleted`, [id]);
+  if (!result.rows[0]?.deleted) {
+    throw notFound("Wallet", id);
+  }
+}
+
 async function getWalletForUpdate(client: PoolClient, id: number): Promise<WalletModel | null> {
   const result = await client.query(`SELECT * FROM sp_wallet_lock_for_update($1)`, [id]);
   return result.rows[0] ? mapRow(result.rows[0]) : null;
@@ -82,6 +114,8 @@ export default {
   getWalletById,
   listWallets,
   updateWalletStatus,
+  updateWallet,
+  deleteWallet,
   getWalletForUpdate,
   assertWalletActive,
   parseAmount,

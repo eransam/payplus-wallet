@@ -3,21 +3,21 @@
  *
  * Usage: npm run test:idempotency
  */
-import dotenv from "dotenv";
-dotenv.config();
+import { authHeaders, BASE, getTestAuthToken } from "./test-auth";
 
-const BASE = `http://localhost:${process.env.PORT || 3001}/api`;
+let token = "";
 
 async function jsonPost(path: string, body: unknown): Promise<{ status: number; data: any }> {
   const res = await fetch(`${BASE}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(token),
     body: JSON.stringify(body),
   });
   return { status: res.status, data: await res.json() };
 }
 
 async function main() {
+  token = await getTestAuthToken();
   console.log("=== Idempotency test: duplicate client_request_id ===\n");
 
   const merchant = await jsonPost("/merchants", { name: `Idem Merchant ${Date.now()}` });
@@ -44,7 +44,9 @@ async function main() {
   const tx1 = first.data.transaction?.id;
   const tx2 = second.data.transaction?.id;
 
-  const walletAfter = await fetch(`${BASE}/wallets/${walletId}`).then((r) => r.json() as Promise<any>);
+  const walletAfter = await fetch(`${BASE}/wallets/${walletId}`, {
+    headers: authHeaders(token),
+  }).then((r) => r.json() as Promise<any>);
 
   console.log("First:", first.status, "tx id:", tx1);
   console.log("Second:", second.status, "tx id:", tx2);

@@ -5,7 +5,7 @@
 // queryKeys — השם של המגירה ב-cache
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Wallet } from "../models/types";
-import { createWallet, getWallets } from "../services/api";
+import { createWallet, deleteWallet, getWallets, updateWallet } from "../services/api";
 import { translateApiError } from "../utils/apiErrors";
 import { queryKeys } from "./queryKeys";
 
@@ -51,6 +51,41 @@ export function useCreateWallet() {
         wallet,
         ...current,
       ]);
+    },
+  });
+}
+
+export function useUpdateWallet() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: { owner_identity: string; status: Wallet["status"] };
+    }) => updateWallet(id, data),
+    onSuccess: (wallet) => {
+      queryClient.setQueryData<Wallet[]>(queryKeys.wallets, (current = []) =>
+        current.map((item) => (item.id === wallet.id ? wallet : item)),
+      );
+      queryClient.invalidateQueries({ queryKey: queryKeys.wallet(wallet.id) });
+    },
+  });
+}
+
+export function useDeleteWallet() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => deleteWallet(id),
+    onSuccess: (_result, id) => {
+      queryClient.setQueryData<Wallet[]>(queryKeys.wallets, (current = []) =>
+        current.filter((item) => item.id !== id),
+      );
+      queryClient.removeQueries({ queryKey: queryKeys.wallet(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.transactions });
     },
   });
 }

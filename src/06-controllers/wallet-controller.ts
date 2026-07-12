@@ -109,6 +109,34 @@ router.patch("/merchants/:id/status", async (req: Request, res: Response, next: 
   }
 });
 
+router.patch("/merchants/:id", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseId(req.params.id, "merchant id");
+    const name = String(req.body?.name || "").trim();
+    const status = req.body?.status as EntityStatus;
+    if (!name) {
+      throw badRequest("Merchant name is required");
+    }
+    if (status !== "active" && status !== "inactive") {
+      throw badRequest("status must be active or inactive");
+    }
+    const merchant = await merchantsLogic.updateMerchant(id, { name, status });
+    res.json({ success: true, merchant });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete("/merchants/:id", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseId(req.params.id, "merchant id");
+    await merchantsLogic.deleteMerchant(id);
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // ========== WALLETS ==========
 
 router.post("/wallets", async (req: Request, res: Response, next: NextFunction) => {
@@ -165,6 +193,34 @@ router.patch("/wallets/:id/status", async (req: Request, res: Response, next: Ne
     }
     const wallet = await walletsLogic.updateWalletStatus(id, status);
     res.json({ success: true, wallet });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch("/wallets/:id", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseId(req.params.id, "wallet id");
+    const owner_identity = String(req.body?.owner_identity || "").trim();
+    const status = req.body?.status as EntityStatus;
+    if (!owner_identity) {
+      throw badRequest("owner_identity is required");
+    }
+    if (status !== "active" && status !== "inactive") {
+      throw badRequest("status must be active or inactive");
+    }
+    const wallet = await walletsLogic.updateWallet(id, { owner_identity, status });
+    res.json({ success: true, wallet });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete("/wallets/:id", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseId(req.params.id, "wallet id");
+    await walletsLogic.deleteWallet(id);
+    res.json({ success: true });
   } catch (error) {
     next(error);
   }

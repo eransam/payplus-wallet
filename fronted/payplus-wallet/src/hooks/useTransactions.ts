@@ -45,6 +45,7 @@ export function useWalletCharges(walletId: string) {
 function invalidateAfterMoneyChange(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: queryKeys.transactions });
   queryClient.invalidateQueries({ queryKey: queryKeys.wallets });
+  queryClient.invalidateQueries({ queryKey: queryKeys.merchants });
 }
 
 export function useCharge() {

@@ -4,6 +4,7 @@ export interface Merchant {
   id: number;
   name: string;
   status: EntityStatus;
+  total_received: string;
   created_at: string;
   updated_at: string;
 }

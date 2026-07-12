@@ -3,7 +3,10 @@ import WalletsList from "../components/WalletsList";
 function WalletsPage() {
   return (
     <div>
-      <h1 className="mb-4">ארנקים</h1>
+      <header className="page-header">
+        <h1>ארנקים</h1>
+        <p>צור ונהל ארנקים דיגיטליים</p>
+      </header>
       <WalletsList />
     </div>
   );

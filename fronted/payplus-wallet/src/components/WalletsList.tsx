@@ -33,6 +33,7 @@ function WalletsList() {
                 <th>בעלים</th>
                 <th>יתרה</th>
                 <th>סטטוס</th>
+                <th>פעולות</th>
               </tr>
             </thead>
             <tbody>

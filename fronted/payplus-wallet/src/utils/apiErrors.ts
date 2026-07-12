@@ -7,7 +7,12 @@ const ERROR_MESSAGES_HE: Record<string, string> = {
   refund_exceeds_charge: "סכום ההחזר עולה על סכום החיוב המקורי",
   transaction_declined: "העסקה נדחתה",
   not_found: "הפריט לא נמצא",
-  bad_request: "בקשה לא תקינה",
+  invalid_credentials: "אימייל או סיסמה שגויים",
+  email_exists: "האימייל כבר רשום במערכת",
+  unauthorized: "יש להתחבר מחדש",
+  merchant_has_transactions: "לא ניתן למחוק סוחר שיש לו עסקאות",
+  wallet_has_transactions: "לא ניתן למחוק ארנק שיש לו עסקאות",
+  validation_error: "נתונים לא תקינים",
 };
 
 const MESSAGE_PATTERNS_HE: [RegExp, string][] = [

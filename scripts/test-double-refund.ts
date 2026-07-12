@@ -3,21 +3,21 @@
  *
  * Usage: npm run test:double-refund
  */
-import dotenv from "dotenv";
-dotenv.config();
+import { authHeaders, BASE, getTestAuthToken } from "./test-auth";
 
-const BASE = `http://localhost:${process.env.PORT || 3001}/api`;
+let token = "";
 
 async function jsonPost(path: string, body: unknown): Promise<{ status: number; data: any }> {
   const res = await fetch(`${BASE}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(token),
     body: JSON.stringify(body),
   });
   return { status: res.status, data: await res.json() };
 }
 
 async function main() {
+  token = await getTestAuthToken();
   console.log("=== Double-refund test: 100 charge, two 60 refunds ===\n");
 
   const merchant = await jsonPost("/merchants", { name: `Refund Merchant ${Date.now()}` });
@@ -55,7 +55,9 @@ async function main() {
     client_request_id: `refund-2-${Date.now()}`,
   });
 
-  const walletAfter = await fetch(`${BASE}/wallets/${walletId}`).then((r) => r.json() as Promise<any>);
+  const walletAfter = await fetch(`${BASE}/wallets/${walletId}`, {
+    headers: authHeaders(token),
+  }).then((r) => r.json() as Promise<any>);
 
   console.log("Refund 1:", refund1.status);
   console.log("Refund 2:", refund2.status, refund2.data?.error?.code || "ok");

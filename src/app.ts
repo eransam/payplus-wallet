@@ -8,6 +8,8 @@ import dal from "./04-dal/dal";
 import redisDal from "./04-dal/redis-dal";
 import errorsHandler from "./02-middleware/errors-handler";
 import walletController from "./06-controllers/wallet-controller";
+import authController from "./06-controllers/auth-controller";
+import { requireAuth } from "./02-middleware/auth-middleware";
 import { healthController } from "./06-controllers/health-controller";
 import logger from "./01-utils/log-helper";
 import config from "./01-utils/config";
@@ -43,7 +45,8 @@ redisDal.connect().catch((error) => {
 });
 
 server.use("/api/health", healthController);
-server.use("/api", walletController);
+server.use("/api/auth", authController);
+server.use("/api", requireAuth, walletController);
 
 server.use((req: Request, _res: Response, next: NextFunction) => {
   logger.warn(`Route not found: ${req.method} ${req.originalUrl}`);

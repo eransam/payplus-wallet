@@ -18,17 +18,30 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP FUNCTION IF EXISTS sp_merchant_get_by_id(INTEGER);
 CREATE OR REPLACE FUNCTION sp_merchant_get_by_id(p_id INTEGER)
 RETURNS TABLE (
     id INTEGER,
     name VARCHAR(255),
     status VARCHAR(20),
     created_at TIMESTAMPTZ,
-    updated_at TIMESTAMPTZ
+    updated_at TIMESTAMPTZ,
+    total_received NUMERIC(18, 2)
 ) AS $$
 BEGIN
     RETURN QUERY
-    SELECT m.id, m.name, m.status, m.created_at, m.updated_at
+    SELECT m.id, m.name, m.status, m.created_at, m.updated_at,
+           COALESCE((
+               SELECT SUM(
+                   CASE
+                       WHEN t.type = 'charge' THEN t.amount
+                       WHEN t.type = 'refund' THEN -t.amount
+                       ELSE 0
+                   END
+               )
+               FROM transactions t
+               WHERE t.merchant_id = m.id AND t.status = 'completed'
+           ), 0) AS total_received
     FROM merchants m WHERE m.id = p_id;
 END;
 $$ LANGUAGE plpgsql;
@@ -48,17 +61,30 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP FUNCTION IF EXISTS sp_merchant_list(INTEGER, INTEGER);
 CREATE OR REPLACE FUNCTION sp_merchant_list(p_limit INTEGER, p_offset INTEGER)
 RETURNS TABLE (
     id INTEGER,
     name VARCHAR(255),
     status VARCHAR(20),
     created_at TIMESTAMPTZ,
-    updated_at TIMESTAMPTZ
+    updated_at TIMESTAMPTZ,
+    total_received NUMERIC(18, 2)
 ) AS $$
 BEGIN
     RETURN QUERY
-    SELECT m.id, m.name, m.status, m.created_at, m.updated_at
+    SELECT m.id, m.name, m.status, m.created_at, m.updated_at,
+           COALESCE((
+               SELECT SUM(
+                   CASE
+                       WHEN t.type = 'charge' THEN t.amount
+                       WHEN t.type = 'refund' THEN -t.amount
+                       ELSE 0
+                   END
+               )
+               FROM transactions t
+               WHERE t.merchant_id = m.id AND t.status = 'completed'
+           ), 0) AS total_received
     FROM merchants m
     ORDER BY m.id DESC
     LIMIT p_limit OFFSET p_offset;
@@ -78,6 +104,66 @@ BEGIN
     UPDATE merchants SET status = p_status, updated_at = NOW()
     WHERE merchants.id = p_id
     RETURNING merchants.id, merchants.name, merchants.status, merchants.created_at, merchants.updated_at;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP FUNCTION IF EXISTS sp_merchant_update(INTEGER, VARCHAR, VARCHAR);
+CREATE OR REPLACE FUNCTION sp_merchant_update(
+    p_id INTEGER,
+    p_name VARCHAR(255),
+    p_status VARCHAR(20)
+)
+RETURNS TABLE (
+    id INTEGER,
+    name VARCHAR(255),
+    status VARCHAR(20),
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ,
+    total_received NUMERIC(18, 2)
+) AS $$
+BEGIN
+    UPDATE merchants
+    SET name = p_name, status = p_status, updated_at = NOW()
+    WHERE merchants.id = p_id;
+
+    IF NOT FOUND THEN
+        RETURN;
+    END IF;
+
+    RETURN QUERY SELECT * FROM sp_merchant_get_by_id(p_id);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION sp_merchant_delete(p_id INTEGER)
+RETURNS BOOLEAN AS $$
+DECLARE
+    v_deleted INTEGER;
+BEGIN
+    -- Bypass append-only ledger trigger for administrative cascade delete
+    SET LOCAL session_replication_role = replica;
+
+    DELETE FROM ledger_entries le
+    WHERE le.transaction_id IN (
+        SELECT t.id FROM transactions t WHERE t.merchant_id = p_id
+    );
+
+    DELETE FROM transactions t
+    WHERE t.merchant_id = p_id AND t.type = 'refund';
+
+    DELETE FROM transactions t
+    WHERE t.merchant_id = p_id;
+
+    DELETE FROM merchants m WHERE m.id = p_id;
+    GET DIAGNOSTICS v_deleted = ROW_COUNT;
+
+    RETURN v_deleted > 0;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION sp_merchant_has_transactions(p_id INTEGER)
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (SELECT 1 FROM transactions t WHERE t.merchant_id = p_id LIMIT 1);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -183,6 +269,68 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP FUNCTION IF EXISTS sp_wallet_update(INTEGER, VARCHAR, VARCHAR);
+CREATE OR REPLACE FUNCTION sp_wallet_update(
+    p_id INTEGER,
+    p_owner_identity VARCHAR(255),
+    p_status VARCHAR(20)
+)
+RETURNS TABLE (
+    id INTEGER,
+    owner_identity VARCHAR(255),
+    currency CHAR(3),
+    balance NUMERIC(18, 2),
+    status VARCHAR(20),
+    version INTEGER,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
+) AS $$
+BEGIN
+    UPDATE wallets
+    SET owner_identity = p_owner_identity, status = p_status, updated_at = NOW()
+    WHERE wallets.id = p_id;
+
+    IF NOT FOUND THEN
+        RETURN;
+    END IF;
+
+    RETURN QUERY SELECT * FROM sp_wallet_get_by_id(p_id);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION sp_wallet_delete(p_id INTEGER)
+RETURNS BOOLEAN AS $$
+DECLARE
+    v_deleted INTEGER;
+BEGIN
+    SET LOCAL session_replication_role = replica;
+
+    DELETE FROM ledger_entries le
+    WHERE le.wallet_id = p_id
+       OR le.transaction_id IN (
+           SELECT t.id FROM transactions t WHERE t.wallet_id = p_id
+       );
+
+    DELETE FROM transactions t
+    WHERE t.wallet_id = p_id AND t.type = 'refund';
+
+    DELETE FROM transactions t
+    WHERE t.wallet_id = p_id;
+
+    DELETE FROM wallets w WHERE w.id = p_id;
+    GET DIAGNOSTICS v_deleted = ROW_COUNT;
+
+    RETURN v_deleted > 0;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION sp_wallet_has_transactions(p_id INTEGER)
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (SELECT 1 FROM transactions t WHERE t.wallet_id = p_id LIMIT 1);
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION sp_wallet_debit(p_id INTEGER, p_amount NUMERIC(18, 2), p_expected_version INTEGER)
 RETURNS TABLE (
     balance NUMERIC(18, 2),
@@ -192,14 +340,14 @@ RETURNS TABLE (
 BEGIN
     RETURN QUERY
     WITH upd AS (
-        UPDATE wallets
-        SET balance = balance - p_amount,
-            version = version + 1,
+        UPDATE wallets w
+        SET balance = w.balance - p_amount,
+            version = w.version + 1,
             updated_at = NOW()
-        WHERE id = p_id
-          AND balance >= p_amount
-          AND version = p_expected_version
-        RETURNING wallets.balance, wallets.version
+        WHERE w.id = p_id
+          AND w.balance >= p_amount
+          AND w.version = p_expected_version
+        RETURNING w.balance, w.version
     )
     SELECT upd.balance, upd.version, 1::INTEGER FROM upd
     UNION ALL
@@ -218,12 +366,12 @@ RETURNS TABLE (
 BEGIN
     RETURN QUERY
     WITH upd AS (
-        UPDATE wallets
-        SET balance = balance + p_amount,
-            version = version + 1,
+        UPDATE wallets w
+        SET balance = w.balance + p_amount,
+            version = w.version + 1,
             updated_at = NOW()
-        WHERE id = p_id AND version = p_expected_version
-        RETURNING wallets.balance, wallets.version
+        WHERE w.id = p_id AND w.version = p_expected_version
+        RETURNING w.balance, w.version
     )
     SELECT upd.balance, upd.version, 1::INTEGER FROM upd
     UNION ALL

@@ -26,11 +26,14 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   let response: Response;
+  const token = localStorage.getItem("payplus_token");
+  const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
 
   try {
     response = await fetch(`${API_BASE}${path}`, {
       headers: {
         "Content-Type": "application/json",
+        ...authHeader,
         ...options?.headers,
       },
       ...options,
@@ -58,6 +61,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return data as T;
 }
 
+export { request };
+
 export function getHealth(): Promise<HealthResponse> {
   return request<HealthResponse>("/health");
 }
@@ -78,6 +83,27 @@ export function createMerchant(name: string): Promise<Merchant> {
     method: "POST",
     body: JSON.stringify({ name }),
   }).then((data) => data.merchant);
+}
+
+type MerchantResponse = {
+  success: boolean;
+  merchant: Merchant;
+};
+
+export function updateMerchant(
+  id: number,
+  data: { name: string; status: Merchant["status"] },
+): Promise<Merchant> {
+  return request<MerchantResponse>(`/merchants/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  }).then((res) => res.merchant);
+}
+
+export function deleteMerchant(id: number): Promise<void> {
+  return request<{ success: boolean }>(`/merchants/${id}`, {
+    method: "DELETE",
+  }).then(() => undefined);
 }
 
 type WalletsResponse = {
@@ -115,6 +141,27 @@ export function createWallet(input: {
     method: "POST",
     body: JSON.stringify(input),
   }).then((data) => data.wallet);
+}
+
+type WalletResponse = {
+  success: boolean;
+  wallet: Wallet;
+};
+
+export function updateWallet(
+  id: number,
+  data: { owner_identity: string; status: Wallet["status"] },
+): Promise<Wallet> {
+  return request<WalletResponse>(`/wallets/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  }).then((res) => res.wallet);
+}
+
+export function deleteWallet(id: number): Promise<void> {
+  return request<{ success: boolean }>(`/wallets/${id}`, {
+    method: "DELETE",
+  }).then(() => undefined);
 }
 
 type TransactionsResponse = {

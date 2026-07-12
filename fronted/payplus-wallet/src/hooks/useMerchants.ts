@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Merchant } from "../models/types";
-import { createMerchant, getMerchants } from "../services/api";
+import { createMerchant, deleteMerchant, getMerchants, updateMerchant } from "../services/api";
 import { translateApiError } from "../utils/apiErrors";
 import { queryKeys } from "./queryKeys";
 
@@ -26,9 +26,42 @@ export function useCreateMerchant() {
     mutationFn: (name: string) => createMerchant(name),
     onSuccess: (merchant: Merchant) => {
       queryClient.setQueryData<Merchant[]>(queryKeys.merchants, (current = []) => [
-        merchant,
+        { ...merchant, total_received: merchant.total_received ?? "0.00" },
         ...current,
       ]);
+    },
+  });
+}
+
+export function useUpdateMerchant() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: { name: string; status: Merchant["status"] };
+    }) => updateMerchant(id, data),
+    onSuccess: (merchant) => {
+      queryClient.setQueryData<Merchant[]>(queryKeys.merchants, (current = []) =>
+        current.map((item) => (item.id === merchant.id ? merchant : item)),
+      );
+    },
+  });
+}
+
+export function useDeleteMerchant() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => deleteMerchant(id),
+    onSuccess: (_result, id) => {
+      queryClient.setQueryData<Merchant[]>(queryKeys.merchants, (current = []) =>
+        current.filter((item) => item.id !== id),
+      );
+      queryClient.invalidateQueries({ queryKey: queryKeys.transactions });
     },
   });
 }

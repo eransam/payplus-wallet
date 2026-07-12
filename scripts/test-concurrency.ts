@@ -5,15 +5,14 @@
  * Usage: npm run test:concurrency
  * (API must be running on PORT from .env)
  */
-import dotenv from "dotenv";
-dotenv.config();
+import { authHeaders, BASE, getTestAuthToken } from "./test-auth";
 
-const BASE = `http://localhost:${process.env.PORT || 3001}/api`;
+let token = "";
 
 async function jsonPost(path: string, body: unknown): Promise<{ status: number; data: any }> {
   const res = await fetch(`${BASE}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(token),
     body: JSON.stringify(body),
   });
   const data = await res.json();
@@ -21,6 +20,7 @@ async function jsonPost(path: string, body: unknown): Promise<{ status: number; 
 }
 
 async function main() {
+  token = await getTestAuthToken();
   console.log("=== Concurrency test: 100 ILS, two charges of 80 ILS ===\n");
 
   const merchant = await jsonPost("/merchants", { name: `Test Merchant ${Date.now()}` });
@@ -57,7 +57,9 @@ async function main() {
   console.log("Request A:", a.status, JSON.stringify(a.data, null, 2));
   console.log("\nRequest B:", b.status, JSON.stringify(b.data, null, 2));
 
-  const walletAfter = await fetch(`${BASE}/wallets/${walletId}`).then((r) => r.json() as Promise<any>);
+  const walletAfter = await fetch(`${BASE}/wallets/${walletId}`, {
+    headers: authHeaders(token),
+  }).then((r) => r.json() as Promise<any>);
   const balance = walletAfter.wallet?.balance;
   console.log(`\nFinal balance: ${balance} (expected: 20.00)`);
 
