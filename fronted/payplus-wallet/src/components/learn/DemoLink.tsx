@@ -7,8 +7,8 @@ type DemoLinkProps = {
 
 function DemoLink({ to, label }: DemoLinkProps) {
   return (
-    <p>
-      <Link to={to} className="btn btn-outline-primary btn-sm">
+    <p className="mb-0 mt-3">
+      <Link to={to} className="btn btn-eb-primary btn-sm">
         {label} →
       </Link>
     </p>

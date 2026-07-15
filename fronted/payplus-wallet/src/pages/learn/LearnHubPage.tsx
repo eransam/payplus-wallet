@@ -1,4 +1,3 @@
-import Card from "react-bootstrap/Card";
 import Col from "react-bootstrap/Col";
 import Row from "react-bootstrap/Row";
 import { Link } from "react-router-dom";
@@ -6,30 +5,31 @@ import { learnTopics } from "../../data/learnTopics";
 
 function LearnHubPage() {
   return (
-    <div>
-      <header className="page-header">
-        <h1>מרכז למידה — React</h1>
-        <p>כל נושא שלמדנו בפרויקט — הסבר, קבצים רלוונטיים, וקישור לדמו בפעולה.</p>
+    <div className="learn-hub">
+      <header className="learn-hub__intro">
+        <h1>קורס React — מרכז הלמידה</h1>
+        <p>
+          כל שיעור בנוי כמו שיעור בקורס: מטרות למידה, הסבר מסודר, דוגמאות קוד,
+          חיבור לקבצים בפרויקט, וסיכום למחברת. עבור שיעור-שיעור לפי הסדר.
+        </p>
       </header>
 
       <Row className="g-3">
         {learnTopics.map((topic) => (
           <Col key={topic.slug} md={6} lg={4}>
-            <Card className="h-100 eb-card">
-              <Card.Body className="d-flex flex-column">
-                <Card.Subtitle className="text-muted mb-2">
-                  שיעור {topic.lesson}
-                </Card.Subtitle>
-                <Card.Title>{topic.title}</Card.Title>
-                <Card.Text className="flex-grow-1">{topic.summary}</Card.Text>
+            <div className="card learn-hub__card h-100">
+              <div className="card-body d-flex flex-column">
+                <span className="learn-hub__lesson-badge">שיעור {topic.lesson}</span>
+                <h2 className="h5 mb-2">{topic.title}</h2>
+                <p className="text-muted flex-grow-1 mb-3">{topic.summary}</p>
                 <Link
                   to={`/learn/${topic.slug}`}
                   className="btn btn-eb-primary btn-sm align-self-start"
                 >
-                  למד את הנושא →
+                  פתח שיעור →
                 </Link>
-              </Card.Body>
-            </Card>
+              </div>
+            </div>
           </Col>
         ))}
       </Row>

@@ -1,69 +1,89 @@
+import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
+import Spinner from "react-bootstrap/Spinner";
 import AppLayout from "./components/layout/AppLayout";
 import PublicLayout from "./components/layout/PublicLayout";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ProtectedRoute from "./components/ProtectedRoute";
-import DashboardPage from "./pages/DashboardPage";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
-import MerchantsPage from "./pages/MerchantsPage";
 import RegisterPage from "./pages/RegisterPage";
-import TransactionsPage from "./pages/TransactionsPage";
-import WalletDetailsPage from "./pages/WalletDetailsPage";
-import WalletsPage from "./pages/WalletsPage";
-import ApiLearnPage from "./pages/learn/ApiLearnPage";
-import BasicsLearnPage from "./pages/learn/BasicsLearnPage";
-import ContextLearnPage from "./pages/learn/ContextLearnPage";
-import CustomHooksLearnPage from "./pages/learn/CustomHooksLearnPage";
-import DropdownLearnPage from "./pages/learn/DropdownLearnPage";
-import ErrorBoundaryLearnPage from "./pages/learn/ErrorBoundaryLearnPage";
-import FormsLearnPage from "./pages/learn/FormsLearnPage";
-import LearnHubPage from "./pages/learn/LearnHubPage";
-import ReactHookFormLearnPage from "./pages/learn/ReactHookFormLearnPage";
-import ReactQueryLearnPage from "./pages/learn/ReactQueryLearnPage";
-import RouterLearnPage from "./pages/learn/RouterLearnPage";
-import TestingLearnPage from "./pages/learn/TestingLearnPage.tsx";
-import UseParamsLearnPage from "./pages/learn/UseParamsLearnPage";
-import ValidationLearnPage from "./pages/learn/ValidationLearnPage";
+
+/** דפים כבדים / לא קריטיים לטעינה ראשונה — נטענים רק כשנכנסים ל-route */
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const MerchantsPage = lazy(() => import("./pages/MerchantsPage"));
+const WalletsPage = lazy(() => import("./pages/WalletsPage"));
+const WalletDetailsPage = lazy(() => import("./pages/WalletDetailsPage"));
+const TransactionsPage = lazy(() => import("./pages/TransactionsPage"));
+const LearnHubPage = lazy(() => import("./pages/learn/LearnHubPage"));
+const BasicsLearnPage = lazy(() => import("./pages/learn/BasicsLearnPage"));
+const ApiLearnPage = lazy(() => import("./pages/learn/ApiLearnPage"));
+const FormsLearnPage = lazy(() => import("./pages/learn/FormsLearnPage"));
+const RouterLearnPage = lazy(() => import("./pages/learn/RouterLearnPage"));
+const UseParamsLearnPage = lazy(() => import("./pages/learn/UseParamsLearnPage"));
+const DropdownLearnPage = lazy(() => import("./pages/learn/DropdownLearnPage"));
+const CustomHooksLearnPage = lazy(() => import("./pages/learn/CustomHooksLearnPage"));
+const ContextLearnPage = lazy(() => import("./pages/learn/ContextLearnPage"));
+const ValidationLearnPage = lazy(() => import("./pages/learn/ValidationLearnPage"));
+const ReactQueryLearnPage = lazy(() => import("./pages/learn/ReactQueryLearnPage"));
+const TestingLearnPage = lazy(() => import("./pages/learn/TestingLearnPage"));
+const ReactHookFormLearnPage = lazy(() => import("./pages/learn/ReactHookFormLearnPage"));
+const ErrorBoundaryLearnPage = lazy(() => import("./pages/learn/ErrorBoundaryLearnPage"));
+const CodeSplittingLearnPage = lazy(() => import("./pages/learn/CodeSplittingLearnPage"));
+const UseRefLearnPage = lazy(() => import("./pages/learn/UseRefLearnPage"));
+const ReduxLearnPage = lazy(() => import("./pages/learn/ReduxLearnPage"));
+
+function RouteFallback() {
+  return (
+    <div className="d-flex justify-content-center py-5">
+      <Spinner animation="border" role="status" />
+    </div>
+  );
+}
 
 function App() {
   return (
     <ErrorBoundary>
-      <Routes>
-        <Route element={<PublicLayout />}>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-        </Route>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+          </Route>
 
-        <Route
-          element={
-            <ProtectedRoute>
-              <AppLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/merchants" element={<MerchantsPage />} />
-          <Route path="/wallets" element={<WalletsPage />} />
-          <Route path="/wallets/:id" element={<WalletDetailsPage />} />
-          <Route path="/transactions" element={<TransactionsPage />} />
-          <Route path="/learn" element={<LearnHubPage />} />
-          <Route path="/learn/basics" element={<BasicsLearnPage />} />
-          <Route path="/learn/api" element={<ApiLearnPage />} />
-          <Route path="/learn/forms" element={<FormsLearnPage />} />
-          <Route path="/learn/router" element={<RouterLearnPage />} />
-          <Route path="/learn/use-params" element={<UseParamsLearnPage />} />
-          <Route path="/learn/dropdown" element={<DropdownLearnPage />} />
-          <Route path="/learn/custom-hooks" element={<CustomHooksLearnPage />} />
-          <Route path="/learn/context" element={<ContextLearnPage />} />
-          <Route path="/learn/validation" element={<ValidationLearnPage />} />
-          <Route path="/learn/react-query" element={<ReactQueryLearnPage />} />
-          <Route path="/learn/testing" element={<TestingLearnPage />} />
-          <Route path="/learn/react-hook-form" element={<ReactHookFormLearnPage />} />
-          <Route path="/learn/error-boundary" element={<ErrorBoundaryLearnPage />} />
-        </Route>
-      </Routes>
+          <Route
+            element={
+              <ProtectedRoute>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/merchants" element={<MerchantsPage />} />
+            <Route path="/wallets" element={<WalletsPage />} />
+            <Route path="/wallets/:id" element={<WalletDetailsPage />} />
+            <Route path="/transactions" element={<TransactionsPage />} />
+            <Route path="/learn" element={<LearnHubPage />} />
+            <Route path="/learn/basics" element={<BasicsLearnPage />} />
+            <Route path="/learn/api" element={<ApiLearnPage />} />
+            <Route path="/learn/forms" element={<FormsLearnPage />} />
+            <Route path="/learn/router" element={<RouterLearnPage />} />
+            <Route path="/learn/use-params" element={<UseParamsLearnPage />} />
+            <Route path="/learn/dropdown" element={<DropdownLearnPage />} />
+            <Route path="/learn/custom-hooks" element={<CustomHooksLearnPage />} />
+            <Route path="/learn/context" element={<ContextLearnPage />} />
+            <Route path="/learn/validation" element={<ValidationLearnPage />} />
+            <Route path="/learn/react-query" element={<ReactQueryLearnPage />} />
+            <Route path="/learn/testing" element={<TestingLearnPage />} />
+            <Route path="/learn/react-hook-form" element={<ReactHookFormLearnPage />} />
+            <Route path="/learn/error-boundary" element={<ErrorBoundaryLearnPage />} />
+            <Route path="/learn/code-splitting" element={<CodeSplittingLearnPage />} />
+            <Route path="/learn/use-ref" element={<UseRefLearnPage />} />
+            <Route path="/learn/redux" element={<ReduxLearnPage />} />
+          </Route>
+        </Routes>
+      </Suspense>
     </ErrorBoundary>
   );
 }

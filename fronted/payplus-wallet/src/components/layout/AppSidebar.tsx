@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-
-const PIN_STORAGE_KEY = "payplus-sidebar-pinned";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { toggleSidebarPinned } from "../../store/slices/uiSlice";
 
 type AppSidebarProps = {
   isOpen: boolean;
@@ -17,14 +17,11 @@ const navItems = [
   { to: "/learn", label: "למידה", icon: "📚" },
 ];
 
-function readPinnedState() {
-  return localStorage.getItem(PIN_STORAGE_KEY) === "1";
-}
-
 function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
   const { logout } = useAuth();
   const navigate = useNavigate();
-  const [isPinned, setIsPinned] = useState(readPinnedState);
+  const dispatch = useAppDispatch();
+  const isPinned = useAppSelector((state) => state.ui.sidebarPinned);
   const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 991px)").matches);
 
   useEffect(() => {
@@ -35,12 +32,8 @@ function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
   }, []);
 
   const togglePin = useCallback(() => {
-    setIsPinned((pinned) => {
-      const next = !pinned;
-      localStorage.setItem(PIN_STORAGE_KEY, next ? "1" : "0");
-      return next;
-    });
-  }, []);
+    dispatch(toggleSidebarPinned());
+  }, [dispatch]);
 
   const handleNavClick = useCallback(() => {
     if (isMobile) {

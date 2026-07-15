@@ -84,4 +84,40 @@ export const learnTopics: LearnTopic[] = [
     title: "Error Boundary",
     summary: "תפיסת קריסות ב-render — רשת בטיחות ל-UI",
   },
+  {
+    slug: "code-splitting",
+    lesson: 19,
+    title: "Code Splitting",
+    summary: "lazy + Suspense — טעינת דפים רק כשנכנסים אליהם",
+  },
+  {
+    slug: "use-ref",
+    lesson: 20,
+    title: "useRef",
+    summary: "DOM, ערכים יציבים, וקשר לזליגת זיכרון — עם דמו חי",
+  },
+  {
+    slug: "redux",
+    lesson: 21,
+    title: "Redux Toolkit",
+    summary: "store גלובלי — slices, dispatch, ליד React Query",
+  },
 ];
+
+export function getTopicBySlug(slug: string): LearnTopic | undefined {
+  return learnTopics.find((topic) => topic.slug === slug);
+}
+
+export function getAdjacentTopics(slug: string): {
+  prev?: LearnTopic;
+  next?: LearnTopic;
+} {
+  const index = learnTopics.findIndex((topic) => topic.slug === slug);
+  if (index < 0) {
+    return {};
+  }
+  return {
+    prev: index > 0 ? learnTopics[index - 1] : undefined,
+    next: index < learnTopics.length - 1 ? learnTopics[index + 1] : undefined,
+  };
+}

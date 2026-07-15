@@ -1,22 +1,63 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { getAdjacentTopics, getTopicBySlug } from "../../data/learnTopics";
 
 type LearnTopicLayoutProps = {
-  title: string;
-  lesson: number;
+  slug: string;
   children: ReactNode;
+  objectives?: string[];
 };
 
-function LearnTopicLayout({ title, lesson, children }: LearnTopicLayoutProps) {
+function LearnTopicLayout({ slug, children, objectives }: LearnTopicLayoutProps) {
+  const topic = getTopicBySlug(slug);
+  const { prev, next } = getAdjacentTopics(slug);
+
+  if (!topic) {
+    return <p>השיעור לא נמצא.</p>;
+  }
+
   return (
-    <div>
-      <Link to="/learn" className="text-decoration-none d-inline-block mb-3">
+    <article className="learn-course">
+      <Link to="/learn" className="learn-course__back">
         ← חזרה למרכז הלמידה
       </Link>
-      <p className="text-muted mb-1">שיעור {lesson}</p>
-      <h1 className="mb-4">{title}</h1>
+
+      <header className="learn-course__header">
+        <p className="learn-course__eyebrow">שיעור {topic.lesson}</p>
+        <h1 className="learn-course__title">{topic.title}</h1>
+        <p className="learn-course__summary">{topic.summary}</p>
+      </header>
+
+      {objectives && objectives.length > 0 ? (
+        <section className="learn-section">
+          <h2 className="learn-section__title">בסוף השיעור תדע/י</h2>
+          <ul className="learn-objectives">
+            {objectives.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {children}
-    </div>
+
+      <nav className="learn-nav" aria-label="ניווט בין שיעורים">
+        {prev ? (
+          <Link to={`/learn/${prev.slug}`}>
+            <span className="learn-nav__label">השיעור הקודם</span>
+            ← {prev.title}
+          </Link>
+        ) : (
+          <span />
+        )}
+        {next ? (
+          <Link to={`/learn/${next.slug}`} style={{ textAlign: "end" }}>
+            <span className="learn-nav__label">השיעור הבא</span>
+            {next.title} →
+          </Link>
+        ) : null}
+      </nav>
+    </article>
   );
 }
 

@@ -5,9 +5,9 @@ type FileReferenceProps = {
 
 function FileReference({ path, description }: FileReferenceProps) {
   return (
-    <li className="mb-2">
+    <li>
       <code>{path}</code>
-      {description ? ` — ${description}` : ""}
+      {description ? <span>{description}</span> : null}
     </li>
   );
 }

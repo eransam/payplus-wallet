@@ -1,32 +1,66 @@
-import Card from "react-bootstrap/Card";
-import DemoLink from "../../components/learn/DemoLink";
 import FileReference from "../../components/learn/FileReference";
+import LearnCallout from "../../components/learn/LearnCallout";
+import LearnCode from "../../components/learn/LearnCode";
+import LearnSection from "../../components/learn/LearnSection";
 import LearnTopicLayout from "../../components/learn/LearnTopicLayout";
 
 function TestingLearnPage() {
   return (
-    <LearnTopicLayout title="Testing" lesson={14}>
-      <Card className="mb-4">
-        <Card.Body>
-          <h5>מה זה?</h5>
-          <p>
-            קוד שבודק שהקוד שלך עובד — <strong>Vitest</strong> מריץ,{" "}
-            <strong>React Testing Library</strong> מרנדר קומפוננטות ובודק UI.
-          </p>
-          <p className="mb-0">
-            <code>npm run test:run</code> — מריץ את כל הבדיקות.
-          </p>
-        </Card.Body>
-      </Card>
+    <LearnTopicLayout
+      slug="testing"
+      objectives={[
+        "להבין למה כותבים בדיקות אוטומטיות",
+        "להכיר Vitest + React Testing Library",
+        "לדעת איך מריצים בדיקות בפרויקט",
+      ]}
+    >
+      <LearnSection title="1. למה Testing?">
+        <p>
+          בדיקה אוטומטית = קוד שמוודא שהפיצ&apos;ר עובד, בלי ללחוץ ידנית בכל פעם.
+          כשמשנים משהו — אם נשבר משהו אחר, הבדיקה נופלת ומצביעה על הבעיה.
+        </p>
+      </LearnSection>
 
-      <h5 className="mb-3">קבצים רלוונטיים</h5>
-      <ul className="mb-4">
-        <FileReference path="src/utils/validation.test.ts" description="unit test" />
-        <FileReference path="src/components/CreateMerchantForm.test.tsx" description="component test" />
-        <FileReference path="src/test/test-utils.tsx" description="renderWithProviders" />
-      </ul>
+      <LearnSection title="2. הכלים אצלך">
+        <ul>
+          <li>
+            <strong>Vitest</strong> — מריץ את הבדיקות (כמו Jest לאקוסיסטם Vite)
+          </li>
+          <li>
+            <strong>React Testing Library</strong> — מרנדר קומפוננטה ובודק כמו
+            משתמש: רואה טקסט, לוחץ כפתור
+          </li>
+        </ul>
+        <LearnCode
+          label="רעיון של בדיקה"
+          code={`renderWithProviders(<CreateMerchantForm />);
+// המשתמש רואה כפתור...
+await user.click(screen.getByRole("button", { name: /צור/i }));
+// מצפים לראות שגיאה אם השדה ריק`}
+        />
+        <LearnCallout variant="tip" title="הרצה">
+          בתיקיית הפרונט: <code>npm test</code> או <code>npm run test:run</code>
+        </LearnCallout>
+      </LearnSection>
 
-      <DemoLink to="/merchants" label="הטופס שנבדק ב-CreateMerchantForm.test" />
+      <LearnSection title="3. Providers בבדיקות">
+        <p>
+          קומפוננטות שמשתמשות ב-React Query / Redux צריכות את אותם Providers גם
+          בטסט. לכן יש <code>renderWithProviders</code>.
+        </p>
+        <ul className="learn-files">
+          <FileReference path="src/test/test-utils.tsx" description="Wrapper עם Query + Redux" />
+          <FileReference path="src/components/CreateMerchantForm.test.tsx" description="דוגמת בדיקה" />
+        </ul>
+      </LearnSection>
+
+      <LearnSection title="סיכום למחברת" variant="notebook">
+        <ul>
+          <li>בדיקות = ביטחון לרגרסיות</li>
+          <li>RTL בודק התנהגות משתמש, לא פרטי מימוש</li>
+          <li>תמיד לעטוף ב-Providers כמו באפליקציה</li>
+        </ul>
+      </LearnSection>
     </LearnTopicLayout>
   );
 }
