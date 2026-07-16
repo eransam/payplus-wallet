@@ -110,6 +110,13 @@
   font-weight: 600;
 }
 
+.learn-section__subtitle {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--eb-text);
+}
+
 .learn-section p {
   margin-bottom: 0.75rem;
   line-height: 1.65;

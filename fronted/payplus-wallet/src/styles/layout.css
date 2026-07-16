@@ -182,6 +182,91 @@
   gap: 0.25rem;
 }
 
+.app-sidebar__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.app-sidebar__group-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  margin: 0;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--eb-text-muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: start;
+  white-space: nowrap;
+}
+
+.app-sidebar__group-btn:hover {
+  background: rgba(124, 88, 252, 0.08);
+  color: var(--eb-primary-dark);
+}
+
+.app-sidebar__group-btn--nested {
+  padding: 0.45rem 0.65rem;
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.app-sidebar__chevron {
+  margin-inline-start: auto;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.app-sidebar__subnav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.15rem 0.25rem 0.35rem 0.35rem;
+  border-inline-start: 2px solid rgba(124, 88, 252, 0.2);
+  margin-inline-start: 1.1rem;
+}
+
+.app-sidebar__group--nested > .app-sidebar__subnav {
+  margin-inline-start: 0.35rem;
+  padding-inline-start: 0.5rem;
+}
+
+.app-sidebar__sublink {
+  display: block;
+  padding: 0.4rem 0.55rem;
+  border-radius: 8px;
+  color: var(--eb-text-muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.app-sidebar__sublink:hover {
+  background: rgba(124, 88, 252, 0.08);
+  color: var(--eb-primary-dark);
+}
+
+.app-sidebar__sublink.active {
+  background: var(--eb-sidebar-active);
+  color: var(--eb-sidebar-active-text);
+  font-weight: 600;
+}
+
+.app-sidebar__sublink-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .app-sidebar__link {
   display: flex;
   align-items: center;
@@ -230,12 +315,22 @@
   pointer-events: none;
 }
 
+.app-sidebar:not(:hover):not(.app-sidebar--pinned):not(.app-sidebar--open) .app-sidebar__subnav,
+.app-sidebar:not(:hover):not(.app-sidebar--pinned):not(.app-sidebar--open) .app-sidebar__chevron {
+  display: none;
+}
+
 .app-sidebar:not(:hover):not(.app-sidebar--pinned):not(.app-sidebar--open) .app-sidebar__link,
+.app-sidebar:not(:hover):not(.app-sidebar--pinned):not(.app-sidebar--open) .app-sidebar__group-btn,
 .app-sidebar:not(:hover):not(.app-sidebar--pinned):not(.app-sidebar--open) .app-sidebar__pin,
 .app-sidebar:not(:hover):not(.app-sidebar--pinned):not(.app-sidebar--open) .app-sidebar__logout {
   justify-content: center;
   gap: 0;
   padding-inline: 0.65rem;
+}
+
+.app-sidebar:not(:hover):not(.app-sidebar--pinned):not(.app-sidebar--open) .app-sidebar__group-btn--nested {
+  display: none;
 }
 
 .app-sidebar__rail-tools {
@@ -429,6 +524,15 @@
     justify-content: flex-start;
     gap: 0.75rem;
     padding-inline: 0.85rem;
+  }
+
+  .app-sidebar--open .app-sidebar__subnav {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app-sidebar--open .app-sidebar__group-btn--nested {
+    display: flex;
   }
 
   .app-sidebar__link {

@@ -1,6 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import {
+  getTopicsForCategory,
+  learnCategories,
+} from "../../data/learnTopics";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { toggleSidebarPinned } from "../../store/slices/uiSlice";
 
@@ -9,20 +13,131 @@ type AppSidebarProps = {
   onClose: () => void;
 };
 
-const navItems = [
-  { to: "/dashboard", label: "לוח בקרה", icon: "⌂" },
-  { to: "/merchants", label: "סוחרים", icon: "🏪" },
-  { to: "/wallets", label: "ארנקים", icon: "💳" },
-  { to: "/transactions", label: "עסקאות", icon: "↔" },
-  { to: "/learn", label: "למידה", icon: "📚" },
-];
+function SidebarGroup({
+  id,
+  icon,
+  label,
+  open,
+  onToggle,
+  children,
+  nested,
+}: {
+  id: string;
+  icon: string;
+  label: string;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+  nested?: boolean;
+}) {
+  return (
+    <div
+      className={[
+        "app-sidebar__group",
+        open ? "app-sidebar__group--open" : "",
+        nested ? "app-sidebar__group--nested" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <button
+        type="button"
+        className={
+          nested ? "app-sidebar__group-btn app-sidebar__group-btn--nested" : "app-sidebar__group-btn"
+        }
+        aria-expanded={open}
+        aria-controls={`sidebar-group-${id}`}
+        onClick={onToggle}
+        title={label}
+      >
+        {!nested ? (
+          <span className="app-sidebar__icon" aria-hidden="true">
+            {icon}
+          </span>
+        ) : null}
+        <span className="app-sidebar__label">{label}</span>
+        <span className="app-sidebar__chevron app-sidebar__label" aria-hidden="true">
+          {open ? "▾" : "◂"}
+        </span>
+      </button>
+      {open ? (
+        <div id={`sidebar-group-${id}`} className="app-sidebar__subnav">
+          {children}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function SubLink({
+  to,
+  label,
+  end,
+  onNavigate,
+}: {
+  to: string;
+  label: string;
+  end?: boolean;
+  onNavigate: () => void;
+}) {
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      className={({ isActive }) =>
+        `app-sidebar__sublink${isActive ? " active" : ""}`
+      }
+      onClick={onNavigate}
+      title={label}
+    >
+      <span className="app-sidebar__sublink-text app-sidebar__label">{label}</span>
+    </NavLink>
+  );
+}
 
 function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
   const isPinned = useAppSelector((state) => state.ui.sidebarPinned);
-  const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 991px)").matches);
+  const [isMobile, setIsMobile] = useState(() =>
+    window.matchMedia("(max-width: 991px)").matches,
+  );
+
+  const path = location.pathname;
+  const walletSectionActive =
+    path.startsWith("/merchants") ||
+    path.startsWith("/wallets") ||
+    path.startsWith("/transactions");
+  const learnSectionActive = path.startsWith("/learn");
+
+  const activeLearnCategoryId = useMemo(() => {
+    if (!learnSectionActive) return null;
+    const slug = path.replace(/^\/learn\/?/, "").split("/")[0];
+    if (!slug) return null;
+    return learnCategories.find((cat) => cat.slugs.includes(slug))?.id ?? null;
+  }, [learnSectionActive, path]);
+
+  const [walletOpen, setWalletOpen] = useState(walletSectionActive);
+  const [learnOpen, setLearnOpen] = useState(learnSectionActive);
+  const [openLearnCats, setOpenLearnCats] = useState<Record<string, boolean>>(
+    {},
+  );
+
+  useEffect(() => {
+    if (walletSectionActive) setWalletOpen(true);
+  }, [walletSectionActive]);
+
+  useEffect(() => {
+    if (learnSectionActive) setLearnOpen(true);
+  }, [learnSectionActive]);
+
+  useEffect(() => {
+    if (activeLearnCategoryId) {
+      setOpenLearnCats((prev) => ({ ...prev, [activeLearnCategoryId]: true }));
+    }
+  }, [activeLearnCategoryId]);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 991px)");
@@ -47,6 +162,10 @@ function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
     onClose();
   }, [logout, navigate, onClose]);
 
+  const toggleLearnCat = useCallback((id: string) => {
+    setOpenLearnCats((prev) => ({ ...prev, [id]: !prev[id] }));
+  }, []);
+
   return (
     <>
       <div
@@ -65,26 +184,88 @@ function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
       >
         <div className="app-sidebar__mobile-header">
           <span>תפריט</span>
-          <button type="button" className="app-sidebar__close-btn" onClick={onClose} aria-label="סגור תפריט">
+          <button
+            type="button"
+            className="app-sidebar__close-btn"
+            onClick={onClose}
+            aria-label="סגור תפריט"
+          >
             ✕
           </button>
         </div>
 
-        <nav className="app-sidebar__nav">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `app-sidebar__link${isActive ? " active" : ""}`
-              }
-              onClick={handleNavClick}
-              end={item.to === "/dashboard"}
-            >
-              <span className="app-sidebar__icon">{item.icon}</span>
-              <span className="app-sidebar__label">{item.label}</span>
-            </NavLink>
-          ))}
+        <nav className="app-sidebar__nav" aria-label="תפריט ראשי">
+          <NavLink
+            to="/dashboard"
+            end
+            className={({ isActive }) =>
+              `app-sidebar__link${isActive ? " active" : ""}`
+            }
+            onClick={handleNavClick}
+          >
+            <span className="app-sidebar__icon">⌂</span>
+            <span className="app-sidebar__label">לוח בקרה</span>
+          </NavLink>
+
+          <SidebarGroup
+            id="wallet-app"
+            icon="💳"
+            label="ארנק PayPlus"
+            open={walletOpen}
+            onToggle={() => setWalletOpen((v) => !v)}
+          >
+            <SubLink
+              to="/merchants"
+              label="סוחרים"
+              onNavigate={handleNavClick}
+            />
+            <SubLink to="/wallets" label="ארנקים" onNavigate={handleNavClick} />
+            <SubLink
+              to="/transactions"
+              label="עסקאות"
+              onNavigate={handleNavClick}
+            />
+          </SidebarGroup>
+
+          <SidebarGroup
+            id="learn"
+            icon="📚"
+            label="למידה"
+            open={learnOpen}
+            onToggle={() => setLearnOpen((v) => !v)}
+          >
+            <SubLink
+              to="/learn"
+              label="מרכז הלמידה"
+              end
+              onNavigate={handleNavClick}
+            />
+            {learnCategories.map((category) => {
+              const topics = getTopicsForCategory(category);
+              const catOpen = Boolean(openLearnCats[category.id]);
+
+              return (
+                <SidebarGroup
+                  key={category.id}
+                  id={`learn-${category.id}`}
+                  icon=""
+                  label={category.title}
+                  open={catOpen}
+                  onToggle={() => toggleLearnCat(category.id)}
+                  nested
+                >
+                  {topics.map((topic) => (
+                    <SubLink
+                      key={topic.slug}
+                      to={`/learn/${topic.slug}`}
+                      label={`${topic.lesson}. ${topic.title}`}
+                      onNavigate={handleNavClick}
+                    />
+                  ))}
+                </SidebarGroup>
+              );
+            })}
+          </SidebarGroup>
         </nav>
 
         {!isMobile && (
@@ -94,7 +275,11 @@ function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
               className="app-sidebar__pin"
               onClick={togglePin}
               aria-pressed={isPinned}
-              title={isPinned ? "כיווץ לרצועה (פתיחה במעבר עכבר)" : "הרחבה קבועה"}
+              title={
+                isPinned
+                  ? "כיווץ לרצועה (פתיחה במעבר עכבר)"
+                  : "הרחבה קבועה"
+              }
             >
               <span className="app-sidebar__icon" aria-hidden="true">
                 {isPinned ? "📌" : "«"}
@@ -107,7 +292,12 @@ function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
         )}
 
         <div className="app-sidebar__footer">
-          <button type="button" className="app-sidebar__logout" onClick={handleLogout} title="התנתקות">
+          <button
+            type="button"
+            className="app-sidebar__logout"
+            onClick={handleLogout}
+            title="התנתקות"
+          >
             <span className="app-sidebar__icon" aria-hidden="true">
               ↪
             </span>

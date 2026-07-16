@@ -36,6 +36,27 @@ const OptimisticUpdatesLearnPage = lazy(
   () => import("./pages/learn/OptimisticUpdatesLearnPage"),
 );
 const DeploymentLearnPage = lazy(() => import("./pages/learn/DeploymentLearnPage"));
+const PgAdminLearnPage = lazy(() => import("./pages/learn/PgAdminLearnPage"));
+const ReactInternalsLearnPage = lazy(
+  () => import("./pages/learn/ReactInternalsLearnPage"),
+);
+const MemoryLeakLearnPage = lazy(() => import("./pages/learn/MemoryLeakLearnPage"));
+const UseReducerLearnPage = lazy(() => import("./pages/learn/UseReducerLearnPage"));
+const PerformanceLearnPage = lazy(() => import("./pages/learn/PerformanceLearnPage"));
+const StatePatternsLearnPage = lazy(
+  () => import("./pages/learn/StatePatternsLearnPage"),
+);
+const ForwardRefLearnPage = lazy(() => import("./pages/learn/ForwardRefLearnPage"));
+const UseLayoutEffectLearnPage = lazy(
+  () => import("./pages/learn/UseLayoutEffectLearnPage"),
+);
+const ConcurrentLearnPage = lazy(() => import("./pages/learn/ConcurrentLearnPage"));
+const AccessibilityLearnPage = lazy(
+  () => import("./pages/learn/AccessibilityLearnPage"),
+);
+const TypescriptReactLearnPage = lazy(
+  () => import("./pages/learn/TypescriptReactLearnPage"),
+);
 
 function RouteFallback() {
   return (
@@ -90,6 +111,32 @@ function App() {
               element={<OptimisticUpdatesLearnPage />}
             />
             <Route path="/learn/deployment" element={<DeploymentLearnPage />} />
+            <Route path="/learn/pgadmin" element={<PgAdminLearnPage />} />
+            <Route
+              path="/learn/react-internals"
+              element={<ReactInternalsLearnPage />}
+            />
+            <Route path="/learn/memory-leaks" element={<MemoryLeakLearnPage />} />
+            <Route path="/learn/use-reducer" element={<UseReducerLearnPage />} />
+            <Route path="/learn/performance" element={<PerformanceLearnPage />} />
+            <Route
+              path="/learn/state-patterns"
+              element={<StatePatternsLearnPage />}
+            />
+            <Route path="/learn/forward-ref" element={<ForwardRefLearnPage />} />
+            <Route
+              path="/learn/use-layout-effect"
+              element={<UseLayoutEffectLearnPage />}
+            />
+            <Route path="/learn/concurrent" element={<ConcurrentLearnPage />} />
+            <Route
+              path="/learn/accessibility"
+              element={<AccessibilityLearnPage />}
+            />
+            <Route
+              path="/learn/typescript-react"
+              element={<TypescriptReactLearnPage />}
+            />
           </Route>
         </Routes>
       </Suspense>
