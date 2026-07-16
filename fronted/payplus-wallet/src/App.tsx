@@ -32,6 +32,10 @@ const ErrorBoundaryLearnPage = lazy(() => import("./pages/learn/ErrorBoundaryLea
 const CodeSplittingLearnPage = lazy(() => import("./pages/learn/CodeSplittingLearnPage"));
 const UseRefLearnPage = lazy(() => import("./pages/learn/UseRefLearnPage"));
 const ReduxLearnPage = lazy(() => import("./pages/learn/ReduxLearnPage"));
+const OptimisticUpdatesLearnPage = lazy(
+  () => import("./pages/learn/OptimisticUpdatesLearnPage"),
+);
+const DeploymentLearnPage = lazy(() => import("./pages/learn/DeploymentLearnPage"));
 
 function RouteFallback() {
   return (
@@ -81,6 +85,11 @@ function App() {
             <Route path="/learn/code-splitting" element={<CodeSplittingLearnPage />} />
             <Route path="/learn/use-ref" element={<UseRefLearnPage />} />
             <Route path="/learn/redux" element={<ReduxLearnPage />} />
+            <Route
+              path="/learn/optimistic-updates"
+              element={<OptimisticUpdatesLearnPage />}
+            />
+            <Route path="/learn/deployment" element={<DeploymentLearnPage />} />
           </Route>
         </Routes>
       </Suspense>

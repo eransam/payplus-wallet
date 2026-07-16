@@ -1,6 +1,7 @@
 import type { HealthResponse, Merchant, Transaction, Wallet } from "../models/types";
 
-const API_BASE = "/api";
+/** בפיתוח: /api (Vite proxy → :3001). בפרודקשן: VITE_API_BASE למשל https://api.example.com/api */
+const API_BASE = import.meta.env.VITE_API_BASE ?? "/api";
 
 type MerchantsResponse = {
   success: boolean;

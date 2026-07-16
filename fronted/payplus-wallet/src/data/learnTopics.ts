@@ -102,6 +102,19 @@ export const learnTopics: LearnTopic[] = [
     title: "Redux Toolkit",
     summary: "store גלובלי — slices, dispatch, ליד React Query",
   },
+  {
+    slug: "optimistic-updates",
+    lesson: 22,
+    title: "Optimistic Updates",
+    summary: "עדכון UI מיד — rollback אם השרת נכשל",
+  },
+  {
+    slug: "deployment",
+    lesson: 23,
+    title: "Deployment + AWS",
+    summary: "פרונט S3/CloudFront, RDS, EC2, דומיין, Git/CI — סיכום מלא",
+  },
+
 ];
 
 export function getTopicBySlug(slug: string): LearnTopic | undefined {

@@ -99,7 +99,9 @@ return {
         </ul>
         <p>
           להשוואה עם Context:{" "}
-          <Link to="/learn/context">שיעור Context</Link>.
+          <Link to="/learn/context">שיעור Context</Link>.  
+          להמשך מתקדם:{" "}
+          <Link to="/learn/optimistic-updates">Optimistic Updates</Link>.
         </p>
         <DemoLink to="/wallets" label="כל דפי הנתונים רצים על React Query" />
       </LearnSection>
