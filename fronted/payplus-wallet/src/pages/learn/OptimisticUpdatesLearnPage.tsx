@@ -10,120 +10,148 @@ function OptimisticUpdatesLearnPage() {
     <LearnTopicLayout
       slug="optimistic-updates"
       objectives={[
-        "להבין מהי עדכון אופטימיסטי ולמה זה מרגיש מהיר",
-        "להכיר את המחזור: onMutate → onError → onSuccess/onSettled",
-        "לראות את המימוש האמיתי ב-useMerchants",
+        "להבין מה זה 'אופטימיסטי' בפשטות — מעדכנים מסך לפני השרת",
+        "לדעת מה קורה אם השרת נכשל (rollback)",
+        "לראות את זה בדף הסוחרים שלנו",
       ]}
     >
-      <LearnSection title="1. מה זה Optimistic Update?">
+      <LearnSection title="1. מה רוצים ממך להבין?">
         <p>
-          בדרך כלל: לוחצים "מחק" → מחכים לשרת → רק אז מעדכנים את הרשימה.
+          כשלוחצים &quot;מחק סוחר&quot; — יש שתי דרכים:
         </p>
+        <LearnCode
+          label="רגיל (פסימי)"
+          code={`1. לוחצים מחק
+2. מחכים לשרת... (spinner)
+3. השרת אומר OK
+4. רק אז הסוחר נעלם מהרשימה`}
+        />
+        <LearnCode
+          label="אופטימיסטי"
+          code={`1. לוחצים מחק
+2. הסוחר נעלם מהרשימה מיד   ← מניחים שהשרת יצליח
+3. ברקע נשלחת בקשה לשרת
+4. אם השרת נכשל → מחזירים את הסוחר לרשימה`}
+        />
         <p>
-          <strong>אופטימיסטי:</strong> לוחצים "מחק" → הרשימה מתעדכנת{" "}
-          <em>מיד</em> (מניחים שהשרת יצליח) → במקביל נשלחת הבקשה. אם השרת
-          נכשל — <strong>מחזירים את המצב הקודם</strong> (rollback).
+          <strong>Optimistic</strong> = אופטימי = &quot;נניח שהכל יצליח, נראה
+          למשתמש תוצאה מיד&quot;.
         </p>
-        <LearnCallout variant="tip" title="למה זה חשוב לסניור?">
-          האפליקציה מרגישה מיידית. המשתמש לא מחכה ל-spinner על כל פעולה קטנה.
+        <LearnCallout variant="info" title="אנלוגיה">
+          כמו למחוק מייל ב-Gmail: הוא נעלם מיד. אם המחיקה בשרת נכשלה — הוא
+          חוזר לתיבה. לא מחכים שניה עם מסך טעינה על כל מחיקה.
         </LearnCallout>
       </LearnSection>
 
-      <LearnSection title="2. ארבעת השלבים (React Query)">
+      <LearnSection title="2. למה עושים את זה?">
+        <p>
+          שהאפליקציה תרגיש <strong>מהירה</strong>. המשתמש לא מחכה לשרת על כל
+          לחיצה קטנה (מחיקה, שינוי שם).
+        </p>
+      </LearnSection>
+
+      <LearnSection title="3. מה קורה בקוד (בלי מושגים מסובכים)">
+        <p>כשמוחקים סוחר עם Optimistic:</p>
         <ol>
           <li>
-            <strong>onMutate</strong> — לפני שהשרת ענה: שומרים snapshot של
-            ה-cache, מעדכנים את ה-UI מיד
+            <strong>לפני הבקשה</strong> — שומרים עותק של הרשימה הישנה
+            (&quot;למקרה שנצטרך להחזיר&quot;)
           </li>
           <li>
-            <strong>mutationFn</strong> — הקריאה האמיתית לשרת (POST/PATCH/DELETE)
+            <strong>מיד</strong> — מעדכנים את הרשימה במסך (בלי הסוחר)
           </li>
           <li>
-            <strong>onError</strong> — אם נכשל: מחזירים את ה-snapshot
+            <strong>שולחים</strong> בקשת מחיקה לשרת
           </li>
           <li>
-            <strong>onSuccess / onSettled</strong> — מסנכרנים עם התשובה האמיתית /
-            מרעננים את ה-cache
+            <strong>אם נכשל</strong> — מחזירים את הרשימה הישנה (rollback)
+          </li>
+          <li>
+            <strong>אם הצליח</strong> — משאירים / מסנכרנים עם השרת
           </li>
         </ol>
+      </LearnSection>
+
+      <LearnSection title="4. איך זה נראה ב-React Query">
+        <p>
+          אותם שלבים, עם השמות של הספרייה:
+        </p>
         <LearnCode
-          label="שלד כללי"
+          label="שמות → מה הם עושים"
+          code={`onMutate   = לפני השרת: שמור רשימה ישנה + עדכן מסך מיד
+mutationFn = שלח לשרת (המחיקה האמיתית)
+onError    = השרת נכשל → החזר את הרשימה הישנה
+onSettled  = בסוף → סנכרן עם השרת (רענון)`}
+        />
+        <LearnCode
+          label="מחיקה — שלד"
           code={`useMutation({
   mutationFn: (id) => deleteMerchant(id),
 
   onMutate: async (id) => {
-    await queryClient.cancelQueries({ queryKey: ["merchants"] });
-    const previous = queryClient.getQueryData(["merchants"]);
-    // עדכון מיידי של ה-UI
-    queryClient.setQueryData(["merchants"], (list) =>
-      list.filter((m) => m.id !== id)
-    );
-    return { previous }; // לשמירה ל-rollback
+    const previous = /* הרשימה לפני המחיקה */;
+    // עדכון מסך מיד — בלי הסוחר
+    setMerchantsList(list => list.filter(m => m.id !== id));
+    return { previous };
   },
 
   onError: (_err, _id, context) => {
-    // השרת נכשל → החזר כמו שהיה
-    queryClient.setQueryData(["merchants"], context.previous);
-  },
-
-  onSettled: () => {
-    // בסוף — סנכרון עם האמת מהשרת
-    queryClient.invalidateQueries({ queryKey: ["merchants"] });
+    // כשלון → החזר כמו שהיה
+    setMerchantsList(context.previous);
   },
 });`}
         />
       </LearnSection>
 
-      <LearnSection title="3. למה cancelQueries?">
+      <LearnSection title="5. אצלנו בפרויקט">
         <p>
-          אם יש fetch ברקע שעומד להחזיר רשימה ישנה — הוא עלול לדרוס את העדכון
-          האופטימיסטי. לכן מבטלים queries פתוחים על אותו key לפני השינוי.
+          בדף <strong>סוחרים</strong>:
         </p>
-      </LearnSection>
-
-      <LearnSection title="4. מה מימשנו אצלך">
         <ul>
           <li>
-            <strong>מחיקת סוחר</strong> — נעלם מהטבלה מיד
+            <strong>מחק</strong> — נעלם מיד
           </li>
           <li>
-            <strong>יצירת סוחר</strong> — מופיע מיד עם id זמני שלילי, ואז מוחלף
-            בתשובת השרת האמיתית
+            <strong>צור</strong> — מופיע מיד (עם id זמני), אחר כך מתחלף
+            בתשובה האמיתית מהשרת
           </li>
           <li>
-            <strong>עדכון סוחר</strong> — השם/סטטוס משתנים מיד על המסך
+            <strong>ערוך</strong> — השם/סטטוס משתנים מיד
           </li>
         </ul>
-        <LearnCallout variant="warn" title="מתי לא חובה?">
-          פעולות כבדות/כספיות (charge) לפעמים עדיף לחכות לשרת ורק אז לעדכן —
-          כדי לא להציג יתרה שגויה אפילו לשנייה.
+        <p>
+          הקוד: <code>useMerchants.ts</code> —{" "}
+          <code>useCreateMerchant</code> / <code>useDeleteMerchant</code> /
+          וכו'.
+        </p>
+        <LearnCallout variant="warn" title="מתי לא חובה">
+          פעולות כסף (charge) — לפעמים עדיף לחכות לשרת, כדי לא להציג יתרה
+          שגויה אפילו לרגע.
         </LearnCallout>
       </LearnSection>
 
-      <LearnSection title="5. תרגול">
+      <LearnSection title="6. תראה בעצמך">
         <p>
-          פתח סוחרים: מחק סוחר (או צור אחד) — שימו לב שהרשימה משתנה{" "}
-          <strong>לפני</strong> שהבקשה מסתיימת ב-Network.
+          פתח סוחרים → מחק או צור. הרשימה משתנה <strong>מיד</strong>, לא רק
+          אחרי שה-Network נגמר.
         </p>
-        <ul className="learn-files">
+        <DemoLink to="/merchants" label="דף סוחרים — נסה מחיקה / יצירה" />
+        <ul className="learn-files mt-3">
           <FileReference
-            path="src/hooks/useMerchants.ts"
-            description="useCreateMerchant / useUpdateMerchant / useDeleteMerchant"
-          />
-          <FileReference
-            path="src/hooks/queryKeys.ts"
-            description="queryKeys.merchants"
+            path="fronted/payplus-wallet/src/hooks/useMerchants.ts"
+            description="המימוש האופטימיסטי"
           />
         </ul>
-        <DemoLink to="/merchants" label="נסה יצירה / עריכה / מחיקה של סוחר" />
       </LearnSection>
 
       <LearnSection title="סיכום למחברת" variant="notebook">
         <ul>
-          <li>Optimistic = מעדכנים UI לפני תשובת השרת</li>
-          <li>onMutate שומר previous ומעדכן cache</li>
-          <li>onError עושה rollback</li>
-          <li>onSettled מסנכרן עם השרת</li>
+          <li>
+            Optimistic = מעדכנים את המסך <em>לפני</em> תשובת השרת
+          </li>
+          <li>אם השרת נכשל → מחזירים אחורה (rollback)</li>
+          <li>מרגיש מהיר יותר למשתמש</li>
+          <li>אצלנו: יצירה / עריכה / מחיקה של סוחרים</li>
         </ul>
       </LearnSection>
     </LearnTopicLayout>

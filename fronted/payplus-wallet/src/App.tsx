@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import Spinner from "react-bootstrap/Spinner";
 import AppLayout from "./components/layout/AppLayout";
 import PublicLayout from "./components/layout/PublicLayout";
@@ -42,7 +42,9 @@ const ReactInternalsLearnPage = lazy(
 );
 const MemoryLeakLearnPage = lazy(() => import("./pages/learn/MemoryLeakLearnPage"));
 const UseReducerLearnPage = lazy(() => import("./pages/learn/UseReducerLearnPage"));
-const PerformanceLearnPage = lazy(() => import("./pages/learn/PerformanceLearnPage"));
+const MemoLearnPage = lazy(() => import("./pages/learn/MemoLearnPage"));
+const UseMemoLearnPage = lazy(() => import("./pages/learn/UseMemoLearnPage"));
+const UseCallbackLearnPage = lazy(() => import("./pages/learn/UseCallbackLearnPage"));
 const StatePatternsLearnPage = lazy(
   () => import("./pages/learn/StatePatternsLearnPage"),
 );
@@ -118,7 +120,13 @@ function App() {
             />
             <Route path="/learn/memory-leaks" element={<MemoryLeakLearnPage />} />
             <Route path="/learn/use-reducer" element={<UseReducerLearnPage />} />
-            <Route path="/learn/performance" element={<PerformanceLearnPage />} />
+            <Route path="/learn/memo" element={<MemoLearnPage />} />
+            <Route path="/learn/use-memo" element={<UseMemoLearnPage />} />
+            <Route path="/learn/use-callback" element={<UseCallbackLearnPage />} />
+            <Route
+              path="/learn/performance"
+              element={<Navigate to="/learn/memo" replace />}
+            />
             <Route
               path="/learn/state-patterns"
               element={<StatePatternsLearnPage />}

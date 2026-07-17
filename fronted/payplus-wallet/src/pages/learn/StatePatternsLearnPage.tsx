@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
@@ -83,38 +83,98 @@ function ImmutableDemo() {
 }
 
 function DerivedStateDemo() {
-  const [items] = useState([
-    { id: 1, active: true },
-    { id: 2, active: false },
-    { id: 3, active: true },
+  const [items, setItems] = useState([
+    { id: 1, name: "סוחר א", active: true },
+    { id: 2, name: "סוחר ב", active: false },
+    { id: 3, name: "סוחר ג", active: true },
   ]);
 
-  // נכון — מחושב בכל render, בלי state כפול
+  // Derived — לא useState נפרד
   const activeCount = items.filter((i) => i.active).length;
+  const inactiveCount = items.length - activeCount;
 
   return (
-    <Alert variant="info" className="mb-0">
-      מספר פעילים: <strong>{activeCount}</strong> — חושב מ-
-      <code>items</code>, בלי <code>useState</code> נפרד ל-count.
-    </Alert>
+    <Stack gap={2}>
+      <p className="mb-0 small">
+        לחץ על סוחר כדי להפעיל/לכבות. המספרים למטה <strong>מחושבים</strong> —
+        אין להם <code>useState</code> משלהם.
+      </p>
+      <div className="d-flex flex-wrap gap-2">
+        {items.map((item) => (
+          <Button
+            key={item.id}
+            type="button"
+            size="sm"
+            variant={item.active ? "success" : "outline-secondary"}
+            onClick={() =>
+              setItems((prev) =>
+                prev.map((x) =>
+                  x.id === item.id ? { ...x, active: !x.active } : x,
+                ),
+              )
+            }
+          >
+            {item.name} {item.active ? "✓" : "–"}
+          </Button>
+        ))}
+      </div>
+      <Alert variant="info" className="mb-0 py-2">
+        פעילים: <strong>{activeCount}</strong> · לא פעילים:{" "}
+        <strong>{inactiveCount}</strong> · סה״כ: <strong>{items.length}</strong>
+      </Alert>
+    </Stack>
   );
 }
 
 function ControlledDemo() {
   const [text, setText] = useState("");
+  const uncontrolledRef = useRef<HTMLInputElement>(null);
+  const [uncontrolledRead, setUncontrolledRead] = useState("");
 
   return (
-    <Stack gap={2}>
-      <Form.Label className="mb-0">Controlled — value מ-state</Form.Label>
-      <Form.Control value={text} onChange={(e) => setText(e.target.value)} />
-      <p className="small text-muted mb-0">
-        React שולט בערך. אורך: {text.length}
-      </p>
-      <Form.Label className="mb-0 mt-2">Uncontrolled — defaultValue + ref (רעיון)</Form.Label>
-      <Form.Control defaultValue="ברירת מחדל" />
-      <p className="small text-muted mb-0">
-        הערך חי ב-DOM. קוראים אותו ב-submit עם ref — פחות נפוץ בטפסים שלנו.
-      </p>
+    <Stack gap={3}>
+      <div>
+        <p className="fw-semibold mb-1">א) Controlled — React שולט</p>
+        <p className="small text-muted mb-2">
+          כל אות שאתה מקליד → נשמרת ב-<code>useState</code> → React שם אותה
+          חזרה בשדה. לכן אפשר להציג את האורך / לבדוק שגיאות בזמן אמת.
+        </p>
+        <Form.Control
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="הקלד כאן..."
+        />
+        <p className="small mb-0 mt-1">
+          מה שיש ב-state עכשיו: <strong>&quot;{text}&quot;</strong> (אורך{" "}
+          {text.length})
+        </p>
+      </div>
+
+      <div>
+        <p className="fw-semibold mb-1">ב) Uncontrolled — הדפדפן שולט</p>
+        <p className="small text-muted mb-2">
+          השדה מתנהג כמו HTML רגיל. React לא עוקב אחרי כל אות. רק כשלוחצים
+          &quot;קרא ערך&quot; — שואלים את ה-DOM דרך <code>ref</code>.
+        </p>
+        <Form.Control
+          ref={uncontrolledRef}
+          defaultValue=""
+          placeholder="הקלד כאן (בלי state)..."
+        />
+        <Button
+          type="button"
+          size="sm"
+          className="mt-2"
+          onClick={() =>
+            setUncontrolledRead(uncontrolledRef.current?.value ?? "")
+          }
+        >
+          קרא ערך מה-DOM
+        </Button>
+        <p className="small mb-0 mt-1">
+          מה שקראנו עכשיו: <strong>&quot;{uncontrolledRead || "—"}&quot;</strong>
+        </p>
+      </div>
     </Stack>
   );
 }
@@ -172,40 +232,127 @@ setMerchant({ ...merchant, name: "x" });`}
         </LearnCallout>
       </LearnSection>
 
-      <LearnSection title="3. Derived state — מתי לא לעשות useState">
+      <LearnSection title="3. Derived state — מתי לא לעשות useState (מאפס)">
         <p>
-          אם אפשר <strong>לחשב</strong> מ-props או מ-state קיים — אל תשמור
-          עותק ב-state נוסף. אחרת צריך לסנכרן בשני מקומות וזה באג.
+          <strong>Derived</strong> = ערך שאפשר <em>לחשב</em> ממשהו שכבר יש
+          לך. לא צריך לשמור אותו ב-<code>useState</code> נוסף.
+        </p>
+
+        <h3 className="learn-section__subtitle">דוגמה מהחיים</h3>
+        <p>
+          יש לך רשימת סוחרים. אתה רוצה להציג: &quot;יש 3 פעילים&quot;.
         </p>
         <LearnCode
-          label="דוגמה"
-          code={`// ❌
-const [items, setItems] = useState([...]);
+          label="❌ מיותר ומסוכן"
+          code={`const [merchants, setMerchants] = useState([...]);
 const [activeCount, setActiveCount] = useState(0);
-// כל פעם שמשנים items שוכחים לעדכן activeCount
 
-// ✅
-const activeCount = items.filter((i) => i.active).length;`}
+// כל פעם שמוסיפים/מוחקים סוחר — חייבים לזכור גם:
+setMerchants(...);
+setActiveCount(...); // שוכחים? → המספר על המסך שגוי`}
         />
+        <LearnCode
+          label="✅ נכון — פשוט לחשב"
+          code={`const [merchants, setMerchants] = useState([...]);
+
+// אין state נפרד — מחשבים בכל render:
+const activeCount = merchants.filter((m) => m.status === "active").length;
+
+<p>יש {activeCount} פעילים</p>`}
+        />
+        <p>
+          כש-<code>merchants</code> משתנה → הקומפוננטה מתרנדרת →{" "}
+          <code>activeCount</code> מחושב מחדש אוטומטית. אין מה לסנכרן.
+        </p>
+
+        <LearnCallout variant="info" title="אנלוגיה">
+          יש לך תאריך לידה במסמך. גיל = חישוב מהתאריך. לא שומרים &quot;גיל&quot;
+          במסמך נפרד — כי אז כל יום הולדת צריך לעדכן שני מקומות.
+        </LearnCallout>
+
+        <h3 className="learn-section__subtitle">מתי כן useState?</h3>
+        <ul>
+          <li>
+            מידע שהמשתמש הזין / בחר (טקסט בשדה, טאב פתוח, מודל פתוח)
+          </li>
+          <li>
+            מידע שבא מהשרת ושומרים אחרי fetch (או React Query במקומו)
+          </li>
+        </ul>
+        <p>
+          מתי <strong>לא</strong>: סיכומים, סינון פשוט, &quot;האם הרשימה
+          ריקה&quot;, שם מלא מ-first+last — כל מה שנובע מנתונים שכבר יש.
+        </p>
+
         <div className="learn-demo-box">
           <DerivedStateDemo />
         </div>
       </LearnSection>
 
-      <LearnSection title="4. Controlled vs Uncontrolled">
-        <ul>
-          <li>
-            <strong>Controlled</strong> — <code>value</code> +{" "}
-            <code>onChange</code> + state. React = מקור האמת (הטפסים אצלנו).
-          </li>
-          <li>
-            <strong>Uncontrolled</strong> — <code>defaultValue</code> / ref.
-            ה-DOM מחזיק את הערך (קובץ, אינטגרציה פשוטה).
-          </li>
-        </ul>
+      <LearnSection title="4. Controlled vs Uncontrolled — מאפס">
+        <p>
+          השאלה פשוטה: <strong>מי מחזיק את מה שכתוב בשדה הקלט?</strong>
+        </p>
+
+        <h3 className="learn-section__subtitle">Controlled = React מחזיק</h3>
+        <p>
+          יש <code>useState</code>. כל פעם שמקלידים אות — קוראים ל-
+          <code>setText</code> — ו-React מרנדר שוב עם{" "}
+          <code>value=&#123;text&#125;</code>.
+        </p>
+        <LearnCode
+          label="Controlled"
+          code={`const [text, setText] = useState("");
+
+<input
+  value={text}                          // מה שמוצג = מה שב-state
+  onChange={(e) => setText(e.target.value)}  // כל אות → מעדכן state
+/>
+
+// עכשיו text תמיד יודע מה כתוב בשדה
+// אפשר: if (text.length < 2) showError(...)`}
+        />
+        <LearnCallout variant="info" title="אנלוגיה">
+          כמו מחברת שאתה מעתיק אליה כל מילה מיד. תמיד אפשר לפתוח את המחברת
+          ולדעת בדיוק מה כתוב.
+        </LearnCallout>
+
+        <h3 className="learn-section__subtitle">Uncontrolled = הדפדפן מחזיק</h3>
+        <p>
+          בלי <code>value</code> מ-state. השדה עובד כמו HTML רגיל — המשתמש
+          מקליד, והערך "חי" בתוך ה-input בדפדפן. React לא יודע מה כתוב עד
+          ששואלים במפורש (למשל עם <code>ref</code> בלחיצת Submit).
+        </p>
+        <LearnCode
+          label="Uncontrolled"
+          code={`const inputRef = useRef(null);
+
+<input ref={inputRef} defaultValue="" />
+//                                    ↑ רק ערך התחלתי, לא מעקב שוטף
+
+function onSubmit() {
+  const text = inputRef.current.value; // שואלים את ה-DOM רק עכשיו
+}`}
+        />
+        <LearnCallout variant="info" title="אנלוגיה">
+          כמו פתק על השולחן — אתה לא מעתיק כל אות. רק בסוף מרים את הפתק
+          וקורא מה כתוב.
+        </LearnCallout>
+
         <div className="learn-demo-box">
           <ControlledDemo />
         </div>
+
+        <h3 className="learn-section__subtitle">מה משתמשים אצלנו?</h3>
+        <p>
+          כמעט תמיד <strong>Controlled</strong> (או react-hook-form שעושה את
+          זה בשבילך) — כי צריך validation, להציג שגיאות, ולשלוח לשרת את מה
+          שב-state.
+        </p>
+        <p>
+          Uncontrolled שימושי בעיקר ל-<code>type=&quot;file&quot;</code> או
+          כשמשלבים ספרייה ישנה שלא עובדת עם value מ-React.
+        </p>
       </LearnSection>
 
       <LearnSection title="5. משפטים לראיון">
@@ -220,7 +367,8 @@ const activeCount = items.filter((i) => i.active).length;`}
             "Derived state = לחשב, לא לשמור כפול."
           </li>
           <li>
-            "טפסים מודרניים — controlled (או RHF שמנהל את זה בשבילך)."
+            "Controlled = value מ-state + onChange. Uncontrolled = defaultValue
+            / ref — קוראים מה-DOM ב-submit."
           </li>
         </ul>
       </LearnSection>
@@ -242,8 +390,14 @@ const activeCount = items.filter((i) => i.active).length;`}
         <ul>
           <li>Immutable = [...prev] / &#123;...obj&#125; — לא push על אותו מערך</li>
           <li>key = id · לא index כשהרשימה זזה</li>
-          <li>Derived = חשב · אל תשכפל ל-state</li>
-          <li>Controlled = value מ-React · Uncontrolled = DOM</li>
+          <li>
+            Derived = חשב מ-state קיים (מספר פעילים וכו') · אל תשמור כפול ב-
+            useState
+          </li>
+          <li>
+            Controlled = React מחזיק את הטקסט ב-state · Uncontrolled = שואלים
+            את ה-DOM בסוף עם ref
+          </li>
         </ul>
       </LearnSection>
     </LearnTopicLayout>
