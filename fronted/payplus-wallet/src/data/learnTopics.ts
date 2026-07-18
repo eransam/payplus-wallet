@@ -11,9 +11,16 @@ export type LearnCategory = {
   slugs: string[];
 };
 
-/** סדר השיעורים = סדר הלמידה (1…N רציף) */
-export const learnTopics: LearnTopic[] = [
-  // —— יסודות React ——
+/** מסלול לימודים — React / Node.js */
+export type LearnTrack = {
+  id: "react" | "nodejs";
+  title: string;
+  summary: string;
+  categories: LearnCategory[];
+};
+
+/** —— React —— */
+const reactTopics: LearnTopic[] = [
   {
     slug: "basics",
     lesson: 1,
@@ -50,7 +57,6 @@ export const learnTopics: LearnTopic[] = [
     title: "Dropdown (select)",
     summary: "בחירה מרשימה במקום הקלדת ID",
   },
-  // —— Hooks ו-State ——
   {
     slug: "custom-hooks",
     lesson: 7,
@@ -87,7 +93,6 @@ export const learnTopics: LearnTopic[] = [
     title: "State patterns",
     summary: "immutable, keys, derived state, controlled vs uncontrolled",
   },
-  // —— נתונים וטפסים ——
   {
     slug: "context",
     lesson: 13,
@@ -124,7 +129,6 @@ export const learnTopics: LearnTopic[] = [
     title: "Redux Toolkit",
     summary: "מחסן state לכל האפליקציה — אצלנו pin סיידבר; לא במקום React Query",
   },
-  // —— איכות וביצועים ——
   {
     slug: "testing",
     lesson: 19,
@@ -179,7 +183,6 @@ export const learnTopics: LearnTopic[] = [
     title: "Accessibility (a11y)",
     summary: "labels, מקלדת, focus, ARIA בסיסי — לראיון ולמוצר",
   },
-  // —— מנוע וסניור ——
   {
     slug: "react-internals",
     lesson: 28,
@@ -192,7 +195,6 @@ export const learnTopics: LearnTopic[] = [
     title: "TypeScript + React",
     summary: "props, events, children, generics — כמו בפרויקט",
   },
-  // —— תשתית ו-DB ——
   {
     slug: "deployment",
     lesson: 30,
@@ -207,8 +209,7 @@ export const learnTopics: LearnTopic[] = [
   },
 ];
 
-/** קיבוץ שיעורים לתפריט צד + מרכז למידה (לפי סדר הלמידה) */
-export const learnCategories: LearnCategory[] = [
+const reactCategories: LearnCategory[] = [
   {
     id: "foundations",
     title: "יסודות React",
@@ -265,8 +266,242 @@ export const learnCategories: LearnCategory[] = [
   },
 ];
 
+/** —— Node.js —— (מספור שיעורים נפרד מ-React) */
+const nodeTopics: LearnTopic[] = [
+  {
+    slug: "node-what-is",
+    lesson: 1,
+    title: "מה זה Node.js",
+    summary: "מאפס — runtime ל-JS בשרת, למה נוצר, ומה אפשר לבנות איתו",
+  },
+  {
+    slug: "node-event-loop",
+    lesson: 2,
+    title: "Event Loop",
+    summary: "למה Node לא חוסם, call stack, queues, ומה זה באמת single-threaded",
+  },
+  {
+    slug: "node-modules",
+    lesson: 3,
+    title: "Modules (CJS / ESM)",
+    summary: "require מול import, package.json type, וייצוא/ייבוא בין קבצים",
+  },
+  {
+    slug: "node-async",
+    lesson: 4,
+    title: "Async: Promises ו-async/await",
+    summary: "מ-callback hell עד async/await — ואיך לא לבלוע שגיאות",
+  },
+  {
+    slug: "node-http",
+    lesson: 5,
+    title: "HTTP מאפס",
+    summary: "בקשה, תשובה, status codes, headers, body — השפה של כל API",
+  },
+  {
+    slug: "node-express",
+    lesson: 6,
+    title: "Express",
+    summary: "בניית שרת Express — listen, routes, json parser, routers",
+  },
+  {
+    slug: "node-middleware",
+    lesson: 7,
+    title: "Middleware",
+    summary: "שרשרת next() — cors, helmet, auth, וסדר ההרצה",
+  },
+  {
+    slug: "node-architecture",
+    lesson: 8,
+    title: "ארכיטקטורת שכבות",
+    summary: "controllers → services → data — הפרדת אחריות ולמה זה סניור",
+  },
+  {
+    slug: "node-errors",
+    lesson: 9,
+    title: "Error Handling",
+    summary: "מחלקת שגיאה מותאמת, error middleware עם 4 ארגומנטים, לא לקרוס",
+  },
+  {
+    slug: "node-env",
+    lesson: 10,
+    title: "Env ו-Config",
+    summary: "dotenv, NODE_ENV, סודות שלא נכנסים ל-git — ניהול config נכון",
+  },
+  {
+    slug: "node-postgres",
+    lesson: 11,
+    title: "PostgreSQL + Pool",
+    summary: "pg Pool, connect, queries — עבודה עם מסד נתונים ב-Node",
+  },
+  {
+    slug: "node-transactions",
+    lesson: 12,
+    title: "טרנזקציות DB",
+    summary: "BEGIN/COMMIT/ROLLBACK — למה פעולות כספיות חייבות atomicity",
+  },
+  {
+    slug: "node-redis",
+    lesson: 13,
+    title: "Redis",
+    summary: "cache מהיר בזיכרון — מתי ולמה משתמשים בו ליד מסד נתונים",
+  },
+  {
+    slug: "node-idempotency",
+    lesson: 14,
+    title: "Idempotency",
+    summary: "אותה בקשה פעמיים לא מבצעת פעמיים — דפוס סניור לתשלומים",
+  },
+  {
+    slug: "node-auth",
+    lesson: 15,
+    title: "JWT ו-Auth",
+    summary: "login, token, middleware להגנת routes — flow אימות מלא",
+  },
+  {
+    slug: "node-security",
+    lesson: 16,
+    title: "אבטחת API",
+    summary: "helmet, cors, bcrypt, לא לחשוף stack ב-production",
+  },
+  {
+    slug: "node-logging",
+    lesson: 17,
+    title: "Logging",
+    summary: "לוגים מסודרים (Winston), levels — לראות מה קרה בפרודקשן",
+  },
+  {
+    slug: "node-process",
+    lesson: 18,
+    title: "Process ו-Graceful Shutdown",
+    summary: "signals, לסגור חיבורים נקי, לא לאבד בקשות באמצע",
+  },
+  {
+    slug: "node-streams",
+    lesson: 19,
+    title: "Streams",
+    summary: "לקרוא/לכתוב בחלקים — קבצים גדולים בלי לפוצץ זיכרון",
+  },
+  {
+    slug: "node-typescript",
+    lesson: 20,
+    title: "TypeScript ב-Node",
+    summary: "ts-node, types ל-Express, טיפוסים למודלים ולבקשות",
+  },
+  {
+    slug: "node-testing",
+    lesson: 21,
+    title: "Testing בשרת",
+    summary: "unit מול integration, Jest/Vitest, supertest, mocking ל-DB",
+  },
+  {
+    slug: "node-validation",
+    lesson: 22,
+    title: "Validation בצד שרת",
+    summary: "Zod/Joi — לעולם לא לסמוך על הלקוח, 400 עם הודעה ברורה",
+  },
+  {
+    slug: "node-docker",
+    lesson: 23,
+    title: "Docker ל-Node",
+    summary: "Dockerfile, image, container, docker-compose עם DB ו-Redis",
+  },
+  {
+    slug: "node-scaling",
+    lesson: 24,
+    title: "Scaling ו-Performance",
+    summary: "cluster, worker_threads, load balancer, stateless — מתי ואיך לגדול",
+  },
+  {
+    slug: "node-interview-qa",
+    lesson: 25,
+    title: "שאלות ותשובות לראיון",
+    summary: "שאלות ראיון נפוצות על Node.js עם תשובות ברמת סניור — לחזרה מהירה",
+  },
+];
+
+const nodeCategories: LearnCategory[] = [
+  {
+    id: "node-foundations",
+    title: "יסודות Node.js",
+    slugs: ["node-what-is", "node-event-loop", "node-modules", "node-async"],
+  },
+  {
+    id: "node-http-express",
+    title: "HTTP ו-Express",
+    slugs: ["node-http", "node-express", "node-middleware", "node-architecture"],
+  },
+  {
+    id: "node-data",
+    title: "נתונים ואמינות",
+    slugs: [
+      "node-errors",
+      "node-env",
+      "node-postgres",
+      "node-transactions",
+      "node-redis",
+      "node-idempotency",
+    ],
+  },
+  {
+    id: "node-senior",
+    title: "אבטחה וסניור",
+    slugs: [
+      "node-auth",
+      "node-security",
+      "node-logging",
+      "node-process",
+      "node-streams",
+      "node-typescript",
+    ],
+  },
+  {
+    id: "node-advanced",
+    title: "סניור מתקדם",
+    slugs: [
+      "node-testing",
+      "node-validation",
+      "node-docker",
+      "node-scaling",
+      "node-interview-qa",
+    ],
+  },
+];
+
+export const learnTracks: LearnTrack[] = [
+  {
+    id: "react",
+    title: "React",
+    summary: "קורס React מלא — מקומפוננטות ועד מנוע וסניור, על בסיס PayPlus Wallet",
+    categories: reactCategories,
+  },
+  {
+    id: "nodejs",
+    title: "Node.js",
+    summary:
+      "קורס Node.js / Express כללי ברמת סניור — Event Loop, שכבות, Postgres, Redis, JWT",
+    categories: nodeCategories,
+  },
+];
+
+/** כל השיעורים (שני המסלולים) */
+export const learnTopics: LearnTopic[] = [...reactTopics, ...nodeTopics];
+
+/** תאימות לאחור — קטגוריות React בלבד */
+export const learnCategories: LearnCategory[] = reactCategories;
+
 export function getTopicBySlug(slug: string): LearnTopic | undefined {
   return learnTopics.find((topic) => topic.slug === slug);
+}
+
+export function getTrackById(id: LearnTrack["id"]): LearnTrack | undefined {
+  return learnTracks.find((track) => track.id === id);
+}
+
+export function getTrackForSlug(slug: string): LearnTrack | undefined {
+  return learnTracks.find((track) =>
+    track.categories.some((cat) => cat.slugs.includes(slug)),
+  );
 }
 
 export function getTopicsForCategory(category: LearnCategory): LearnTopic[] {
@@ -275,16 +510,26 @@ export function getTopicsForCategory(category: LearnCategory): LearnTopic[] {
     .filter((topic): topic is LearnTopic => topic != null);
 }
 
+/** סדר השיעורים בתוך מסלול אחד (React או Node) */
+export function getTopicsInTrackOrder(track: LearnTrack): LearnTopic[] {
+  return track.categories.flatMap((category) => getTopicsForCategory(category));
+}
+
 export function getAdjacentTopics(slug: string): {
   prev?: LearnTopic;
   next?: LearnTopic;
 } {
-  const index = learnTopics.findIndex((topic) => topic.slug === slug);
+  const track = getTrackForSlug(slug);
+  if (!track) {
+    return {};
+  }
+  const ordered = getTopicsInTrackOrder(track);
+  const index = ordered.findIndex((topic) => topic.slug === slug);
   if (index < 0) {
     return {};
   }
   return {
-    prev: index > 0 ? learnTopics[index - 1] : undefined,
-    next: index < learnTopics.length - 1 ? learnTopics[index + 1] : undefined,
+    prev: index > 0 ? ordered[index - 1] : undefined,
+    next: index < ordered.length - 1 ? ordered[index + 1] : undefined,
   };
 }

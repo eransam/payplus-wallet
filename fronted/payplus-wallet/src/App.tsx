@@ -60,6 +60,81 @@ const TypescriptReactLearnPage = lazy(
   () => import("./pages/learn/TypescriptReactLearnPage"),
 );
 
+/** Node.js learn track */
+const NodeWhatIsLearnPage = lazy(
+  () => import("./pages/learn/node/NodeWhatIsLearnPage"),
+);
+const NodeEventLoopLearnPage = lazy(
+  () => import("./pages/learn/node/NodeEventLoopLearnPage"),
+);
+const NodeModulesLearnPage = lazy(
+  () => import("./pages/learn/node/NodeModulesLearnPage"),
+);
+const NodeAsyncLearnPage = lazy(
+  () => import("./pages/learn/node/NodeAsyncLearnPage"),
+);
+const NodeHttpLearnPage = lazy(
+  () => import("./pages/learn/node/NodeHttpLearnPage"),
+);
+const NodeExpressLearnPage = lazy(
+  () => import("./pages/learn/node/NodeExpressLearnPage"),
+);
+const NodeMiddlewareLearnPage = lazy(
+  () => import("./pages/learn/node/NodeMiddlewareLearnPage"),
+);
+const NodeArchitectureLearnPage = lazy(
+  () => import("./pages/learn/node/NodeArchitectureLearnPage"),
+);
+const NodeErrorsLearnPage = lazy(
+  () => import("./pages/learn/node/NodeErrorsLearnPage"),
+);
+const NodeEnvLearnPage = lazy(() => import("./pages/learn/node/NodeEnvLearnPage"));
+const NodePostgresLearnPage = lazy(
+  () => import("./pages/learn/node/NodePostgresLearnPage"),
+);
+const NodeTransactionsLearnPage = lazy(
+  () => import("./pages/learn/node/NodeTransactionsLearnPage"),
+);
+const NodeRedisLearnPage = lazy(
+  () => import("./pages/learn/node/NodeRedisLearnPage"),
+);
+const NodeIdempotencyLearnPage = lazy(
+  () => import("./pages/learn/node/NodeIdempotencyLearnPage"),
+);
+const NodeAuthLearnPage = lazy(
+  () => import("./pages/learn/node/NodeAuthLearnPage"),
+);
+const NodeSecurityLearnPage = lazy(
+  () => import("./pages/learn/node/NodeSecurityLearnPage"),
+);
+const NodeLoggingLearnPage = lazy(
+  () => import("./pages/learn/node/NodeLoggingLearnPage"),
+);
+const NodeProcessLearnPage = lazy(
+  () => import("./pages/learn/node/NodeProcessLearnPage"),
+);
+const NodeStreamsLearnPage = lazy(
+  () => import("./pages/learn/node/NodeStreamsLearnPage"),
+);
+const NodeTypescriptLearnPage = lazy(
+  () => import("./pages/learn/node/NodeTypescriptLearnPage"),
+);
+const NodeTestingLearnPage = lazy(
+  () => import("./pages/learn/node/NodeTestingLearnPage"),
+);
+const NodeValidationLearnPage = lazy(
+  () => import("./pages/learn/node/NodeValidationLearnPage"),
+);
+const NodeDockerLearnPage = lazy(
+  () => import("./pages/learn/node/NodeDockerLearnPage"),
+);
+const NodeScalingLearnPage = lazy(
+  () => import("./pages/learn/node/NodeScalingLearnPage"),
+);
+const NodeInterviewQaLearnPage = lazy(
+  () => import("./pages/learn/node/NodeInterviewQaLearnPage"),
+);
+
 function RouteFallback() {
   return (
     <div className="d-flex justify-content-center py-5">
@@ -144,6 +219,63 @@ function App() {
             <Route
               path="/learn/typescript-react"
               element={<TypescriptReactLearnPage />}
+            />
+
+            {/* Node.js track */}
+            <Route path="/learn/node-what-is" element={<NodeWhatIsLearnPage />} />
+            <Route
+              path="/learn/node-event-loop"
+              element={<NodeEventLoopLearnPage />}
+            />
+            <Route path="/learn/node-modules" element={<NodeModulesLearnPage />} />
+            <Route path="/learn/node-async" element={<NodeAsyncLearnPage />} />
+            <Route path="/learn/node-http" element={<NodeHttpLearnPage />} />
+            <Route path="/learn/node-express" element={<NodeExpressLearnPage />} />
+            <Route
+              path="/learn/node-middleware"
+              element={<NodeMiddlewareLearnPage />}
+            />
+            <Route
+              path="/learn/node-architecture"
+              element={<NodeArchitectureLearnPage />}
+            />
+            <Route path="/learn/node-errors" element={<NodeErrorsLearnPage />} />
+            <Route path="/learn/node-env" element={<NodeEnvLearnPage />} />
+            <Route
+              path="/learn/node-postgres"
+              element={<NodePostgresLearnPage />}
+            />
+            <Route
+              path="/learn/node-transactions"
+              element={<NodeTransactionsLearnPage />}
+            />
+            <Route path="/learn/node-redis" element={<NodeRedisLearnPage />} />
+            <Route
+              path="/learn/node-idempotency"
+              element={<NodeIdempotencyLearnPage />}
+            />
+            <Route path="/learn/node-auth" element={<NodeAuthLearnPage />} />
+            <Route
+              path="/learn/node-security"
+              element={<NodeSecurityLearnPage />}
+            />
+            <Route path="/learn/node-logging" element={<NodeLoggingLearnPage />} />
+            <Route path="/learn/node-process" element={<NodeProcessLearnPage />} />
+            <Route path="/learn/node-streams" element={<NodeStreamsLearnPage />} />
+            <Route
+              path="/learn/node-typescript"
+              element={<NodeTypescriptLearnPage />}
+            />
+            <Route path="/learn/node-testing" element={<NodeTestingLearnPage />} />
+            <Route
+              path="/learn/node-validation"
+              element={<NodeValidationLearnPage />}
+            />
+            <Route path="/learn/node-docker" element={<NodeDockerLearnPage />} />
+            <Route path="/learn/node-scaling" element={<NodeScalingLearnPage />} />
+            <Route
+              path="/learn/node-interview-qa"
+              element={<NodeInterviewQaLearnPage />}
             />
           </Route>
         </Routes>

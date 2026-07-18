@@ -3,7 +3,8 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   getTopicsForCategory,
-  learnCategories,
+  getTrackForSlug,
+  learnTracks,
 } from "../../data/learnTopics";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { toggleSidebarPinned } from "../../store/slices/uiSlice";
@@ -43,7 +44,9 @@ function SidebarGroup({
       <button
         type="button"
         className={
-          nested ? "app-sidebar__group-btn app-sidebar__group-btn--nested" : "app-sidebar__group-btn"
+          nested
+            ? "app-sidebar__group-btn app-sidebar__group-btn--nested"
+            : "app-sidebar__group-btn"
         }
         aria-expanded={open}
         aria-controls={`sidebar-group-${id}`}
@@ -112,15 +115,26 @@ function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
     path.startsWith("/transactions");
   const learnSectionActive = path.startsWith("/learn");
 
-  const activeLearnCategoryId = useMemo(() => {
+  const learnSlug = useMemo(() => {
     if (!learnSectionActive) return null;
     const slug = path.replace(/^\/learn\/?/, "").split("/")[0];
-    if (!slug) return null;
-    return learnCategories.find((cat) => cat.slugs.includes(slug))?.id ?? null;
+    return slug || null;
   }, [learnSectionActive, path]);
+
+  const activeTrackId = useMemo(() => {
+    if (!learnSlug) return null;
+    return getTrackForSlug(learnSlug)?.id ?? null;
+  }, [learnSlug]);
+
+  const activeLearnCategoryId = useMemo(() => {
+    if (!learnSlug || !activeTrackId) return null;
+    const track = learnTracks.find((t) => t.id === activeTrackId);
+    return track?.categories.find((cat) => cat.slugs.includes(learnSlug))?.id ?? null;
+  }, [learnSlug, activeTrackId]);
 
   const [walletOpen, setWalletOpen] = useState(walletSectionActive);
   const [learnOpen, setLearnOpen] = useState(learnSectionActive);
+  const [openTracks, setOpenTracks] = useState<Record<string, boolean>>({});
   const [openLearnCats, setOpenLearnCats] = useState<Record<string, boolean>>(
     {},
   );
@@ -132,6 +146,12 @@ function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
   useEffect(() => {
     if (learnSectionActive) setLearnOpen(true);
   }, [learnSectionActive]);
+
+  useEffect(() => {
+    if (activeTrackId) {
+      setOpenTracks((prev) => ({ ...prev, [activeTrackId]: true }));
+    }
+  }, [activeTrackId]);
 
   useEffect(() => {
     if (activeLearnCategoryId) {
@@ -161,6 +181,10 @@ function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
     navigate("/login");
     onClose();
   }, [logout, navigate, onClose]);
+
+  const toggleTrack = useCallback((id: string) => {
+    setOpenTracks((prev) => ({ ...prev, [id]: !prev[id] }));
+  }, []);
 
   const toggleLearnCat = useCallback((id: string) => {
     setOpenLearnCats((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -240,28 +264,42 @@ function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
               end
               onNavigate={handleNavClick}
             />
-            {learnCategories.map((category) => {
-              const topics = getTopicsForCategory(category);
-              const catOpen = Boolean(openLearnCats[category.id]);
-
+            {learnTracks.map((track) => {
+              const trackOpen = Boolean(openTracks[track.id]);
               return (
                 <SidebarGroup
-                  key={category.id}
-                  id={`learn-${category.id}`}
+                  key={track.id}
+                  id={`track-${track.id}`}
                   icon=""
-                  label={category.title}
-                  open={catOpen}
-                  onToggle={() => toggleLearnCat(category.id)}
+                  label={track.title}
+                  open={trackOpen}
+                  onToggle={() => toggleTrack(track.id)}
                   nested
                 >
-                  {topics.map((topic) => (
-                    <SubLink
-                      key={topic.slug}
-                      to={`/learn/${topic.slug}`}
-                      label={`${topic.lesson}. ${topic.title}`}
-                      onNavigate={handleNavClick}
-                    />
-                  ))}
+                  {track.categories.map((category) => {
+                    const topics = getTopicsForCategory(category);
+                    const catOpen = Boolean(openLearnCats[category.id]);
+                    return (
+                      <SidebarGroup
+                        key={category.id}
+                        id={`learn-${category.id}`}
+                        icon=""
+                        label={category.title}
+                        open={catOpen}
+                        onToggle={() => toggleLearnCat(category.id)}
+                        nested
+                      >
+                        {topics.map((topic) => (
+                          <SubLink
+                            key={topic.slug}
+                            to={`/learn/${topic.slug}`}
+                            label={`${topic.lesson}. ${topic.title}`}
+                            onNavigate={handleNavClick}
+                          />
+                        ))}
+                      </SidebarGroup>
+                    );
+                  })}
                 </SidebarGroup>
               );
             })}

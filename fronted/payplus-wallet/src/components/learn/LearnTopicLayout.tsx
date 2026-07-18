@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { getAdjacentTopics, getTopicBySlug } from "../../data/learnTopics";
+import {
+  getAdjacentTopics,
+  getTopicBySlug,
+  getTrackForSlug,
+} from "../../data/learnTopics";
 
 type LearnTopicLayoutProps = {
   slug: string;
@@ -10,6 +14,7 @@ type LearnTopicLayoutProps = {
 
 function LearnTopicLayout({ slug, children, objectives }: LearnTopicLayoutProps) {
   const topic = getTopicBySlug(slug);
+  const track = getTrackForSlug(slug);
   const { prev, next } = getAdjacentTopics(slug);
 
   if (!topic) {
@@ -23,7 +28,10 @@ function LearnTopicLayout({ slug, children, objectives }: LearnTopicLayoutProps)
       </Link>
 
       <header className="learn-course__header">
-        <p className="learn-course__eyebrow">שיעור {topic.lesson}</p>
+        <p className="learn-course__eyebrow">
+          {track ? `${track.title} · ` : ""}
+          שיעור {topic.lesson}
+        </p>
         <h1 className="learn-course__title">{topic.title}</h1>
         <p className="learn-course__summary">{topic.summary}</p>
       </header>
