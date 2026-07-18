@@ -36,32 +36,81 @@ function NodeScalingLearnPage() {
 
       <LearnSection title="2. cluster — כל הליבות באותה מכונה">
         <p>
-          מודול <code>cluster</code> מריץ כמה עותקים (workers) של השרת —
-          אחד לכל ליבה — וכולם חולקים את אותו פורט:
+          לפני הקוד — בוא נבין את הרעיון עם דימוי. חשוב על המעבד של המחשב
+          כעל <strong>מטבח עם 8 תחנות עבודה</strong> (8 ליבות). Node רגיל =
+          טבח אחד שעובד בתחנה אחת. שאר 7 התחנות? ריקות. חבל.
+        </p>
+        <p>
+          הפתרון המתבקש: <strong>להעסיק 8 טבחים</strong> — כלומר להריץ 8
+          עותקים של השרת שלנו, אחד על כל ליבה. וזה בדיוק מה שמודול{" "}
+          <code>cluster</code> עושה.
+        </p>
+        <p>אבל רגע, יש בעיה. איך זה עובד עם הפורט?</p>
+        <LearnCallout variant="warn" title="הבעיה">
+          שרת מאזין לפורט אחד, למשל 3000. אי אפשר ששני תהליכים "יתפסו" את
+          אותו פורט — השני יקבל שגיאה (port already in use). אז איך 8
+          עותקים יענו לאותו פורט 3000?
+        </LearnCallout>
+        <p>
+          הפתרון של cluster: תהליך אחד הוא <strong>המנהל</strong> (primary) —
+          הוא לא מטפל בבקשות בעצמו. הוא <strong>יולד</strong> (fork) את
+          העותקים העובדים (workers), ורק הוא מחזיק את פורט 3000. כשמגיעה
+          בקשה — המנהל מעביר אותה לאחד העובדים הפנויים. כלפי חוץ זה נראה
+          כמו שרת אחד; בפנים — 8 שרתים עובדים.
         </p>
         <LearnCode
-          label="cluster בסיסי"
+          label="התמונה"
+          code={`                        ┌─ Worker 1 (ליבה 1)
+בקשות → Primary (3000) ─┼─ Worker 2 (ליבה 2)
+        "המנהל"          ┼─ Worker 3 (ליבה 3)
+                        └─ ... עד 8`}
+        />
+        <p>
+          עכשיו הקוד. שים לב לטריק: <strong>אותו קובץ רץ 9 פעמים</strong>{" "}
+          (מנהל + 8 עובדים), וה-<code>if</code> קובע מי אני הפעם:
+        </p>
+        <LearnCode
+          label="cluster בסיסי — שורה אחר שורה"
           code={`import cluster from "node:cluster";
 import os from "node:os";
 
 if (cluster.isPrimary) {
-  const cpus = os.cpus().length;
+  // ===== אני המנהל =====
+  const cpus = os.cpus().length;      // כמה ליבות יש? (למשל 8)
+
   for (let i = 0; i < cpus; i++) {
-    cluster.fork(); // עותק לכל ליבה
-  }
-  cluster.on("exit", (worker) => {
-    console.log(\`worker \${worker.process.pid} died — restarting\`);
-    cluster.fork(); // self-healing
+    cluster.fork();                    // תוליד עובד — עוד תהליך
+  }                                    // שמריץ את *אותו קובץ* מההתחלה
+
+  // עובד קרס? תוליד חדש במקומו — השירות לא נופל
+  cluster.on("exit", () => {
+    cluster.fork();
   });
+
 } else {
-  // כל worker מריץ את השרת הרגיל
-  startServer();
+  // ===== אני עובד (אחד מה-8) =====
+  // הקוד הזה רץ אצל כל עובד בנפרד:
+  startServer(); // Express רגיל עם app.listen(3000)
 }`}
         />
-        <LearnCallout variant="info" title="בפועל">
-          היום לרוב לא כותבים cluster ידנית — משתמשים ב-<strong>PM2</strong>{" "}
-          (<code>pm2 start app.js -i max</code>) או מריצים כמה containers.
-          העיקרון זהה.
+        <p>
+          מה קורה כשהקובץ רץ: בפעם הראשונה <code>cluster.isPrimary</code>{" "}
+          הוא true → נכנסים לענף המנהל → 8 קריאות <code>fork()</code> יוצרות
+          8 תהליכים חדשים שמריצים את אותו קובץ — אבל אצלם{" "}
+          <code>isPrimary</code> הוא false → הם נכנסים לענף השני ומרימים את
+          השרת. ה-<code>app.listen(3000)</code> אצל worker לא באמת תופס את
+          הפורט — cluster מנתב את זה דרך המנהל.
+        </p>
+        <p>
+          בונוס גדול: <strong>עמידות</strong>. עובד אחד קרס בגלל באג? המנהל
+          שם לב (<code>on("exit")</code>) ומיד מוליד עובד חדש. המשתמשים בקושי
+          מרגישים — 7 העובדים האחרים ממשיכים לענות.
+        </p>
+        <LearnCallout variant="info" title="בפועל — לא כותבים את זה ידנית">
+          היום משתמשים ב-<strong>PM2</strong> — כלי שעושה את כל זה בפקודה
+          אחת: <code>pm2 start app.js -i max</code> ("תריץ עותק לכל ליבה").
+          או מריצים כמה containers של Docker. אבל העיקרון מתחת זהה — וזה מה
+          ששואלים בראיון.
         </LearnCallout>
       </LearnSection>
 

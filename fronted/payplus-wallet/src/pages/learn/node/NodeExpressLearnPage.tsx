@@ -15,15 +15,90 @@ function NodeExpressLearnPage() {
         "להכיר את req ו-res — הגשר בין הקוד ל-HTTP",
       ]}
     >
-      <LearnSection title="1. מאפס — למה Express?">
+      <LearnSection title="1. מאפס — למה בכלל צריך Express?">
         <p>
-          Node יודע לקבל HTTP עם מודול <code>http</code> — אבל צריך לכתוב הרבה
-          boilerplate: לפרסר URL, לקרוא body, לנתב לפי path ולפי method.{" "}
-          <strong>Express</strong> הוא framework דק שעושה את זה בשבילך.
+          Node לבד <strong>כבר יודע</strong> להיות שרת — יש לו מודול מובנה
+          בשם <code>http</code>. אפשר לבנות API שלם רק איתו. אז למה כולם
+          מתקינים Express?
         </p>
+        <p>
+          כי עם <code>http</code> הגולמי, <strong>הכל עליך</strong>. תראה מה
+          נדרש רק כדי לענות לשתי כתובות שונות:
+        </p>
+        <LearnCode
+          label="בלי Express — מודול http גולמי"
+          code={`import http from "node:http";
+
+const server = http.createServer((req, res) => {
+  // אין ניתוב — בודקים ידנית גם את הכתובת וגם את המתודה:
+  if (req.url === "/api/users" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify([{ id: 1, name: "דנה" }]));
+
+  } else if (req.url === "/api/users" && req.method === "POST") {
+    // אין req.body! צריך לאסוף את הגוף חתיכה-חתיכה בעצמנו:
+    let raw = "";
+    req.on("data", (chunk) => (raw += chunk));
+    req.on("end", () => {
+      const body = JSON.parse(raw);
+      res.writeHead(201, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ id: 2, ...body }));
+    });
+
+  } else {
+    res.writeHead(404);
+    res.end();
+  }
+});
+
+server.listen(3000);`}
+        />
+        <p>
+          שים לב כמה עבודה ידנית יש כאן: שרשרת <code>if/else</code> לניתוב,
+          איסוף ה-body בחתיכות, כתיבת headers בכל תשובה. ועוד לא דיברנו על{" "}
+          <code>/api/users/5</code> (לחלץ את ה-5 מהכתובת — בעצמך).
+        </p>
+        <p>עכשיו בדיוק אותו שרת — עם Express:</p>
+        <LearnCode
+          label="עם Express — אותו דבר בדיוק"
+          code={`import express from "express";
+
+const app = express();
+app.use(express.json()); // req.body מוכן לבד
+
+app.get("/api/users", (req, res) => {
+  res.json([{ id: 1, name: "דנה" }]);
+});
+
+app.post("/api/users", (req, res) => {
+  res.status(201).json({ id: 2, ...req.body });
+});
+
+app.listen(3000);`}
+        />
+        <p>
+          אותה תוצאה, רבע מהקוד. Express נותן לך שלושה דברים עיקריים:
+        </p>
+        <ul>
+          <li>
+            <strong>ניתוב (Routing)</strong> — במקום if/else:{" "}
+            <code>app.get("/api/users", ...)</code>. הכתובת והמתודה כבר
+            מופרדות, כולל פרמטרים כמו <code>/users/:id</code>.
+          </li>
+          <li>
+            <strong>עזרים ל-req/res</strong> — <code>req.body</code> מוכן,{" "}
+            <code>res.json(...)</code> כותב JSON עם ה-headers הנכונים בשורה
+            אחת.
+          </li>
+          <li>
+            <strong>Middleware</strong> — דרך להפעיל קוד על כל בקשה (אבטחה,
+            אימות, לוגים) בלי לשכפל אותו בכל route. זה כל השיעור הבא.
+          </li>
+        </ul>
         <LearnCallout variant="tip" title="במשפט אחד">
-          Express = router + middleware + helpers על גבי Node HTTP — הסטנדרט
-          de-facto ל-API ב-JS.
+          Express לא מחליף את Node — הוא שכבה דקה <strong>מעל</strong> מודול
+          ה-http של Node, שחוסכת את כל העבודה הידנית. בגלל זה הוא הכלי
+          הנפוץ ביותר לבניית API ב-JavaScript.
         </LearnCallout>
       </LearnSection>
 

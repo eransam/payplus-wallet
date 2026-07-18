@@ -131,22 +131,60 @@ app.use(errorHandler);          // 6 — תמיד אחרון`}
       </LearnSection>
 
       <LearnSection title="6. error middleware — התחנה האחרונה">
+        <p>
+          חשוב להבין: <strong>לא מספיק לכתוב את הפונקציה</strong> — צריך גם
+          לרשום אותה ב-app, כמו כל middleware. שני שלבים:
+        </p>
         <LearnCode
-          label="error handler — 4 פרמטרים"
-          code={`function errorHandler(err, req, res, next) {
+          label="שלב 1 — כותבים את הפונקציה (קובץ נפרד)"
+          code={`// middleware/error-handler.ts
+export function errorHandler(err, req, res, next) {
   console.error(err);
   const status = err.status ?? 500;
   res.status(status).json({
     error: { message: err.message ?? "Internal server error" },
   });
-}
+}`}
+        />
+        <LearnCode
+          label="שלב 2 — רושמים אותה בקובץ הראשי, אחרונה"
+          code={`const app = express();
 
-app.use(errorHandler); // אחרי כל השאר`}
+app.use(express.json());
+app.use("/api/users", usersRouter);   // כל ה-routes
+
+app.use(errorHandler);                // ← כאן! תמיד אחרי הכל
+app.listen(3000);`}
+        />
+        <LearnCallout variant="info" title="איך Express יודע שזו פונקציית שגיאות?">
+          לפי <strong>מספר הפרמטרים</strong>. Express סופר: 3 פרמטרים{" "}
+          <code>(req, res, next)</code> = middleware רגיל; 4 פרמטרים{" "}
+          <code>(err, req, res, next)</code> = error handler. זה כל הקסם —
+          אין שום רישום מיוחד מעבר ל-<code>app.use</code> הרגיל.
+        </LearnCallout>
+        <p>ואיך שגיאה בכלל מגיעה אליה? דרך <code>next(err)</code>:</p>
+        <LearnCode
+          label="הדרך של שגיאה אל ה-error handler"
+          code={`router.get("/", async (req, res, next) => {
+  try {
+    const users = await userService.getAll();
+    res.json(users);
+  } catch (err) {
+    next(err); // ← "יש שגיאה!" — Express מדלג על כל השאר
+               //    וקופץ ישר ל-errorHandler
+  }
+});`}
         />
         <p>
-          Express מזהה error middleware לפי <strong>4 פרמטרים</strong> בדיוק.
-          כל <code>next(err)</code> בכל מקום באפליקציה מגיע לכאן — מקום אחד
-          מרכזי ללוג ולתשובת שגיאה אחידה.
+          למה היא חייבת להיות <strong>אחרונה</strong>? כי Express עובר על
+          ה-middleware לפי סדר הרישום, ו-<code>next(err)</code> מחפש את
+          ה-error handler הבא <strong>מהנקודה הנוכחית והלאה</strong>. אם
+          רשמת אותה לפני ה-routes — שגיאות מהם פשוט לא ימצאו אותה.
+        </p>
+        <p>
+          התוצאה: מקום <strong>אחד מרכזי</strong> לכל השגיאות באפליקציה —
+          לוג אחיד, תשובת JSON אחידה, ואין צורך לכתוב טיפול שגיאות בכל
+          route מחדש.
         </p>
         <p className="mt-2 mb-0">
           המשך:{" "}

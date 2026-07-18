@@ -9,128 +9,267 @@ function NodeEventLoopLearnPage() {
     <LearnTopicLayout
       slug="node-event-loop"
       objectives={[
-        "להבין למה אומרים ש-Node הוא single-threaded",
-        "להבין מה קורה כשמחכים לרשת / מסד נתונים / קובץ",
-        "להכיר call stack מול callback queue",
-        "לדעת למה קוד חוסם (לולאה כבדה) הורג את השרת",
+        "להבין מה זה 'חוט' (thread) במילים פשוטות",
+        "להבין את המשל: מלצר אחד שלא עומד ומחכה",
+        "לדעת מה באמת קורה כשכותבים await",
+        "להבין למה לולאה כבדה תוקעת את כל השרת",
       ]}
     >
-      <LearnSection title="1. הבעיה ש-Event Loop פותר">
+      <LearnSection title="1. קודם כל — מה זה 'חוט' (thread)?">
         <p>
-          דמיין שרת שמקבל 1000 בקשות במקביל. אם כל בקשה הייתה{" "}
-          <strong>חוסמת</strong> את השרת עד שמסד הנתונים עונה — היית מטפל
-          בבקשה אחת בכל רגע. איטי מאוד.
+          לפני הכל, מושג אחד פשוט: <strong>חוט = עובד אחד שמבצע פקודות אחת
+          אחרי השנייה</strong>. הוא לא יכול לעשות שני דברים בו-זמנית — בדיוק
+          כמו שאתה לא יכול לקרוא ספר ולכתוב מייל באותה שנייה.
         </p>
         <p>
-          Node עובד אחרת: כשמחכים לתשובה מבחוץ, הוא <strong>לא יושב בטל</strong>{" "}
-          — הוא ממשיך לטפל בבקשות אחרות. כשהתשובה מגיעה — חוזרים להמשיך את
-          הקוד מאותה נקודה.
+          ב-Node יש <strong>עובד אחד כזה</strong> שמריץ את הקוד JavaScript
+          שלך. אחד. זה מה שמתכוונים כשאומרים "Node הוא single-threaded".
         </p>
-        <LearnCallout variant="tip" title="במשפט אחד">
-          Event Loop = המנגנון שמאפשר ל-Node לחכות להרבה דברים במקביל על חוט
-          JS אחד, בלי לחסום את כולם.
+        <p>ועכשיו נשאלת השאלה הגדולה:</p>
+        <LearnCallout variant="info" title="השאלה שכל השיעור עונה עליה">
+          אם יש רק עובד אחד — איך שרת Node מצליח לשרת אלפי משתמשים בו-זמנית?
         </LearnCallout>
       </LearnSection>
 
-      <LearnSection title="2. Single-threaded — מה זה אומר באמת">
+      <LearnSection title="2. המשל: מלצר במסעדה">
         <p>
-          <strong>הקוד שלך ב-JS רץ על חוט אחד.</strong> אין שתי שורות JS
-          שרצות באמת במקביל באותו תהליך. אבל:
+          דמיין מסעדה עם <strong>מלצר אחד בלבד</strong> (זה חוט ה-JS שלנו).
+        </p>
+        <p>
+          <strong>מלצר גרוע</strong> עובד ככה: לוקח הזמנה משולחן 1, הולך
+          למטבח, <em>עומד שם ומחכה 10 דקות</em> עד שהמנה מוכנה, מגיש, ורק אז
+          ניגש לשולחן 2. עם 10 שולחנות — האחרון יחכה שעות. זו תוכנית{" "}
+          <strong>חוסמת</strong> (blocking).
+        </p>
+        <p>
+          <strong>מלצר חכם</strong> עובד אחרת: לוקח הזמנה משולחן 1,{" "}
+          <strong>מוסר אותה למטבח וממשיך מיד</strong> לשולחן 2, ואז 3, ואז
+          4... כשהמטבח מצלצל בפעמון "מנה מוכנה!" — הוא ניגש, לוקח ומגיש.
+          מלצר אחד מצליח לשרת את כל המסעדה.
+        </p>
+        <p>עכשיו נתרגם למחשבים:</p>
+        <ul>
+          <li>
+            <strong>המלצר</strong> = חוט ה-JS (מריץ את הקוד שלך)
+          </li>
+          <li>
+            <strong>המטבח</strong> = מסד הנתונים, הדיסק, הרשת — כל דבר
+            "איטי" שקורה מחוץ ל-Node
+          </li>
+          <li>
+            <strong>הפעמון</strong> = ההודעה "התוצאה מוכנה, אפשר להמשיך"
+          </li>
+          <li>
+            <strong>ה-Event Loop</strong> = הסדר שהמלצר עובד לפיו: "אין לי
+            מה לעשות? אבדוק אם צלצל פעמון"
+          </li>
+        </ul>
+        <LearnCallout variant="tip" title="Event Loop במשפט אחד">
+          לולאה אינסופית שרצה ברקע ושואלת שוב ושוב: "יש משימה חדשה? יש
+          תוצאה שחזרה מהמטבח? אם כן — תריץ את ההמשך שלה".
+        </LearnCallout>
+      </LearnSection>
+
+      <LearnSection title="3. איך זה נראה בקוד אמיתי">
+        <p>ניקח בקשת API פשוטה — משתמש מבקש רשימת מוצרים:</p>
+        <LearnCode
+          label="handler עם await"
+          code={`app.get("/api/products", async (req, res) => {
+  console.log("1. התחלתי לטפל בבקשה");
+
+  const products = await db.query("SELECT * FROM products");
+  // ה-await = "מסרתי למטבח, תמשיך לשרת אחרים"
+
+  console.log("2. קיבלתי תשובה מהמסד");
+  res.json(products);
+});`}
+        />
+        <p>מה קורה שלב אחרי שלב:</p>
+        <ol>
+          <li>
+            הבקשה מגיעה → המלצר (חוט ה-JS) מריץ את השורות עד ה-
+            <code>await</code>.
+          </li>
+          <li>
+            ב-<code>await</code>: השאילתה נשלחת למסד הנתונים,{" "}
+            <strong>והפונקציה הזו נעצרת</strong>. אבל שים לב —{" "}
+            <strong>רק הפונקציה הזו!</strong> המלצר עצמו משוחרר.
+          </li>
+          <li>
+            בזמן שהמסד עובד (נגיד 50ms) — המלצר מטפל בבקשות של משתמשים
+            אחרים. הוא לא עומד ומחכה.
+          </li>
+          <li>
+            המסד מחזיר תשובה → "פעמון" → ה-Event Loop מחזיר את המלצר לשורה{" "}
+            <code>console.log("2...")</code> וממשיך משם.
+          </li>
+        </ol>
+        <LearnCallout variant="warn" title="הטעות הנפוצה ביותר">
+          לחשוב ש-<code>await</code> עוצר את כל השרת. לא!{" "}
+          <code>await</code> עוצר <strong>רק את הפונקציה שהוא בתוכה</strong> —
+          ומשחרר את החוט לטפל באחרים. זה בדיוק הקסם.
+        </LearnCallout>
+      </LearnSection>
+
+      <LearnSection title="3.5 שתי נקודות שחשוב לא להתבלבל ביניהן">
+        <p>
+          כאן מתחילים רוב הבלבולים, אז נחדד שתי אמיתות שנשמעות סותרות אבל
+          שתיהן נכונות:
         </p>
         <ul>
           <li>
-            פעולות I/O (רשת, דיסק) מתבצעות <em>מאחורי הקלעים</em> (libuv /
-            מערכת ההפעלה) — לא על חוט ה-JS.
+            <strong>בתוך הפונקציה</strong> — <code>await</code> כן עוצר את
+            הפלואו. השורה שאחרי ה-<code>await</code> תרוץ{" "}
+            <strong>רק אחרי</strong> שהדאטה חזרה. לכן הדאטה תהיה מלאה, לא
+            ריקה.
           </li>
           <li>
-            כשהן מסתיימות — ה-callback / ה-promise נכנסים לתור, וה-Event Loop
-            מריץ אותם על חוט ה-JS כשהוא פנוי.
+            <strong>מחוץ לפונקציה</strong> — בזמן ההמתנה הזו, החוט חופשי
+            לטפל ב<strong>בקשות אחרות</strong>. הוא לא עומד בטל.
           </li>
         </ul>
-        <LearnCallout variant="warn" title="המלכודת">
-          חישוב כבד סינכרוני (לולאה של מיליארד איטרציות){" "}
-          <strong>חוסם את חוט ה-JS</strong> — אף בקשה אחרת לא תטופל עד שהוא
-          מסיים. לכן בשרת API לא עושים עיבוד כבד על החוט הראשי.
+        <LearnCallout variant="tip" title="בשורה אחת">
+          <code>await</code> = עצירה <strong>מקומית</strong> (רק לפונקציה
+          הזאת) + חופש <strong>גלובלי</strong> (לשאר השרת).
         </LearnCallout>
-      </LearnSection>
-
-      <LearnSection title="3. תמונה מנטלית פשוטה">
+        <p>
+          שאלה שעולה תמיד: "אם המלצר ממשיך הלאה, אולי ה-
+          <code>console.log</code> שבשורה הבאה ידפיס דאטה ריקה?" התשובה:{" "}
+          <strong>לא</strong>. המלצר לא ממשיך לשורה הבאה של{" "}
+          <em>אותה</em> הזמנה — הוא עוזב את כל ההזמנה הזו באמצע והולך
+          לשולחנות אחרים, וחוזר לשורה הבאה רק כשהדאטה מוכנה.
+        </p>
         <LearnCode
-          label="מה קורה בבקשת API טיפוסית"
-          code={`1. מגיעה בקשת HTTP → השרת מריץ את ה-handler שלך
-2. אתה שולף נתונים: await db.query("SELECT * FROM users")
-3. Node שולח את השאילתה ומשחרר את חוט ה-JS
-4. בינתיים — Event Loop מטפל בבקשות אחרות
-5. המסד עונה → ההמשך אחרי ה-await רץ
-6. שולחים JSON חזרה ללקוח`}
+          label="נכון — עם await הדאטה מלאה"
+          code={`async function getProducts() {
+  const data = await db.query("SELECT * FROM products"); // עוצר כאן
+  console.log(data); // רץ רק אחרי שהדאטה חזרה — מלאה!
+}`}
+        />
+        <LearnCode
+          label="טעות נפוצה — בלי await מקבלים 'פתק' ולא דאטה"
+          code={`async function getProducts() {
+  const data = db.query("SELECT * FROM products"); // שכחנו await
+  console.log(data); // Promise { <pending> } — לא הדאטה!
+}`}
         />
         <p>
-          ה-<code>await</code> לא "מקפיא את כל Node" — הוא רק אומר: "תעצור{" "}
-          <em>את הפונקציה הזו</em> עד שיש תוצאה, ותן לאחרים לרוץ".
+          עכשiv הדוגמה שמראה את ה"חופש הגלובלי" — שתי בקשות שמגיעות אחת אחרי
+          השנייה. שים לב ש-B לא מחכה ל-A:
+        </p>
+        <LearnCode
+          label="הרץ ב-Console (F12) ותראה את הסדר"
+          code={`// מדמה שאילתת DB שלוקחת 2 שניות
+function fakeDbQuery() {
+  return new Promise((resolve) =>
+    setTimeout(() => resolve("הנתונים!"), 2000)
+  );
+}
+
+async function handleUserA() {
+  console.log("A: התחלתי");
+  const data = await fakeDbQuery(); // מקפיא את A ל-2 שניות
+  console.log("A: קיבלתי", data);
+}
+
+async function handleUserB() {
+  console.log("B: התחלתי");
+}
+
+handleUserA(); // משתמש א'
+handleUserB(); // משתמש ב' — מיד אחריו
+
+// פלט:
+// A: התחלתי
+// B: התחלתי          ← מיד! B לא חיכה ל-A
+// A: קיבלתי הנתונים!  ← רק אחרי 2 שניות`}
+        />
+        <p>
+          זה בדיוק שרת אמיתי: A ו-B הם שני משתמשים. בזכות ה-<code>await</code>,
+          משתמש B לא נתקע רק כי משתמש A מחכה למסד הנתונים.
         </p>
       </LearnSection>
 
-      <LearnSection title="4. סדר הרצה — דוגמה שמפתיעה מתחילים">
+      <LearnSection title="4. אז מתי כן נתקעים? כשהמלצר עצמו עסוק">
+        <p>
+          המערכת עובדת מצוין כל עוד הדברים האיטיים קורים <strong>במטבח</strong>{" "}
+          (מסד נתונים, רשת, דיסק). אבל מה אם המלצר עצמו מתחיל לקצוץ ירקות?
+        </p>
         <LearnCode
-          label="מה יודפס קודם?"
+          label="קוד שתוקע את כל השרת"
+          code={`app.get("/api/report", (req, res) => {
+  let sum = 0;
+  for (let i = 0; i < 5_000_000_000; i++) {
+    sum += i;
+  }
+  // הלולאה הזו רצה על חוט ה-JS עצמו — אין כאן "מטבח"!
+  // 5 שניות שבהן המלצר קוצץ ירקות ולא ניגש לאף שולחן.
+  res.json({ sum });
+});`}
+        />
+        <p>
+          ההבדל הקריטי: <code>await db.query(...)</code> = העבודה אצל{" "}
+          <strong>מישהו אחר</strong> (המסד), החוט פנוי. לולאת חישוב ענקית =
+          העבודה על <strong>החוט עצמו</strong> — ובזמן הזה אף בקשה אחרת לא
+          מטופלת. משתמש אחד לחץ על "דוח" — וכל שאר המשתמשים תקועים.
+        </p>
+        <p>
+          לכן: חישובים כבדים מוציאים החוצה — ל-<code>worker_threads</code>{" "}
+          (עובד נוסף) או לשירות נפרד. את זה נראה בשיעור Scaling.
+        </p>
+      </LearnSection>
+
+      <LearnSection title="5. שאלת הראיון הקלאסית — מה יודפס?">
+        <LearnCode
+          label="נסה לנחש לפני שממשיכים"
           code={`console.log("A");
 
 setTimeout(() => console.log("B"), 0);
 
 Promise.resolve().then(() => console.log("C"));
 
-console.log("D");
-
-// פלט: A, D, C, B`}
-        />
-        <ul>
-          <li>
-            קוד סינכרוני (<code>A</code>, <code>D</code>) רץ קודם — עד הסוף.
-          </li>
-          <li>
-            promises (<code>C</code>) רצים ב-<strong>microtask queue</strong> —
-            מיד אחרי שהקוד הסינכרוני נגמר.
-          </li>
-          <li>
-            <code>setTimeout</code> (<code>B</code>) רץ ב-
-            <strong>macrotask queue</strong> — רק אחרי כל ה-microtasks.
-          </li>
-        </ul>
-      </LearnSection>
-
-      <LearnSection title="5. איך חוסמים שרת בטעות">
-        <LearnCode
-          label="דוגמה רעה — חישוב כבד ב-handler"
-          code={`app.get("/api/report", (req, res) => {
-  let sum = 0;
-  for (let i = 0; i < 5_000_000_000; i++) {
-    sum += i; // חוסם את חוט ה-JS לשניות
-  }
-  res.json({ sum });
-});
-// בזמן הלולאה — כל שאר הבקשות לשרת תקועות!`}
+console.log("D");`}
         />
         <p>
-          פתרונות מקובלים: לפצל את העבודה לחלקים קטנים, להעביר ל-
-          <code>worker_threads</code>, או להוציא לתהליך / שירות נפרד. הכלל:
-          חוט ה-JS צריך להיות פנוי לקבל בקשות.
+          התשובה: <strong>A, D, C, B</strong>. למה?
         </p>
+        <ol>
+          <li>
+            <strong>A ו-D</strong> — קוד רגיל (סינכרוני). המלצר מריץ אותו{" "}
+            <strong>עד הסוף</strong> לפני שהוא בודק פעמונים. לכן הם ראשונים.
+          </li>
+          <li>
+            <strong>C</strong> — הבטחה (Promise) שהתוצאה שלה כבר מוכנה. היא
+            נכנסת לתור "דחוף" (נקרא microtask) — המלצר בודק אותו{" "}
+            <strong>מיד</strong> כשהוא מסיים את הקוד הרגיל.
+          </li>
+          <li>
+            <strong>B</strong> — <code>setTimeout</code> אפילו עם 0 נכנס לתור
+            "רגיל" (macrotask) — שנבדק רק <strong>אחרי</strong> שהתור הדחוף
+            התרוקן.
+          </li>
+        </ol>
+        <LearnCallout variant="tip" title="כלל זהב לזכור">
+          קודם כל הקוד הרגיל עד הסוף → אחר כך כל ה-Promises שמחכים → ורק
+          בסוף timers כמו setTimeout. לכן setTimeout(fn, 0) הוא אף פעם לא
+          באמת "מיד".
+        </LearnCallout>
       </LearnSection>
 
-      <LearnSection title="6. טעויות נפוצות">
+      <LearnSection title="6. שלוש טעויות שהורגות שרתים בפועל">
         <ul>
           <li>
-            לחשוב ש-<code>await</code> "עוצר את השרת" — הוא עוצר רק את
-            הפונקציה הנוכחית.
+            <strong>גרסאות Sync של פונקציות</strong> — למשל{" "}
+            <code>fs.readFileSync</code> בתוך handler. ה-Sync בשם אומר:
+            "המלצר עומד ומחכה". תמיד להעדיף את הגרסה עם await.
           </li>
           <li>
-            להשתמש בגרסאות סינכרוניות של APIs (כמו{" "}
-            <code>fs.readFileSync</code>) בתוך handler של שרת — זה חוסם את
-            כולם.
+            <strong>JSON.parse על קובץ ענק</strong> — פעולה סינכרונית. על
+            מגה-בייטים בודדים זה בסדר; על 500MB — השרת קופא.
           </li>
           <li>
-            להניח ש-<code>setTimeout(fn, 0)</code> רץ מיד — הוא רץ רק אחרי
-            שהקוד הסינכרוני וה-microtasks הסתיימו.
+            <strong>לולאת עיבוד ארוכה על מערך ענק</strong> בתוך בקשה — כמו
+            בדוגמה למעלה. פתרון: worker / queue / לפצל לחלקים.
           </li>
         </ul>
         <p className="mt-2 mb-0">
@@ -141,10 +280,14 @@ console.log("D");
 
       <LearnSection title="סיכום למחברת" variant="notebook">
         <ul>
-          <li>JS שלך על חוט אחד; I/O רץ "בחוץ" וחוזר דרך התור</li>
-          <li>await לא חוסם את כל השרת — רק את המשך הפונקציה</li>
-          <li>קוד סינכרוני כבד = שרת תקוע</li>
-          <li>סדר: סינכרוני → microtasks (promises) → macrotasks (timers)</li>
+          <li>חוט = עובד אחד שעושה דבר אחד בכל רגע. ל-Node יש אחד לקוד שלך</li>
+          <li>
+            המשל: מלצר חכם — מוסר למטבח (DB/רשת) וממשיך לשרת, חוזר כשמצלצל
+            פעמון
+          </li>
+          <li>await עוצר רק את הפונקציה הנוכחית — לא את השרת</li>
+          <li>חישוב כבד על החוט = המלצר קוצץ ירקות = כל השרת תקוע</li>
+          <li>סדר הרצה: קוד רגיל → Promises (דחוף) → setTimeout (רגיל)</li>
         </ul>
       </LearnSection>
     </LearnTopicLayout>

@@ -24,7 +24,7 @@ function LearnTopicLayout({ slug, children, objectives }: LearnTopicLayoutProps)
   return (
     <article className="learn-course">
       <Link to="/learn" className="learn-course__back">
-        ← חזרה למרכז הלמידה
+        → חזרה למרכז הלמידה
       </Link>
 
       <header className="learn-course__header">
@@ -53,7 +53,7 @@ function LearnTopicLayout({ slug, children, objectives }: LearnTopicLayoutProps)
         {prev ? (
           <Link to={`/learn/${prev.slug}`}>
             <span className="learn-nav__label">השיעור הקודם</span>
-            ← {prev.title}
+            → {prev.title}
           </Link>
         ) : (
           <span />
@@ -61,7 +61,7 @@ function LearnTopicLayout({ slug, children, objectives }: LearnTopicLayoutProps)
         {next ? (
           <Link to={`/learn/${next.slug}`} style={{ textAlign: "end" }}>
             <span className="learn-nav__label">השיעור הבא</span>
-            {next.title} →
+            {next.title} ←
           </Link>
         ) : null}
       </nav>
