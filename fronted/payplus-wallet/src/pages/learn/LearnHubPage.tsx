@@ -12,9 +12,10 @@ function LearnHubPage() {
       <header className="learn-hub__intro">
         <h1>מרכז הלמידה</h1>
         <p>
-          שני מסלולים: <strong>React</strong> (פרונט) ו-<strong>Node.js</strong>{" "}
-          (בק-אנד) — על בסיס PayPlus Wallet. בתפריט הצד: למידה → React / Node.js
-          → נושא → שיעור.
+          שלושה מסלולים: <strong>React</strong> (פרונט),{" "}
+          <strong>Node.js</strong> (בק-אנד) ו-<strong>MongoDB</strong> (מסד
+          מסמכים) — על בסיס PayPlus Wallet. בתפריט הצד: למידה → מסלול → נושא →
+          שיעור.
         </p>
       </header>
 

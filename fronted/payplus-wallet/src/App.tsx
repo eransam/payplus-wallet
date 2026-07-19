@@ -135,6 +135,29 @@ const NodeInterviewQaLearnPage = lazy(
   () => import("./pages/learn/node/NodeInterviewQaLearnPage"),
 );
 
+/** MongoDB learn track */
+const MongoWhatIsLearnPage = lazy(
+  () => import("./pages/learn/mongo/MongoWhatIsLearnPage"),
+);
+const MongoInstallLearnPage = lazy(
+  () => import("./pages/learn/mongo/MongoInstallLearnPage"),
+);
+const MongoCrudLearnPage = lazy(
+  () => import("./pages/learn/mongo/MongoCrudLearnPage"),
+);
+const MongoQueriesLearnPage = lazy(
+  () => import("./pages/learn/mongo/MongoQueriesLearnPage"),
+);
+const MongoNodeLearnPage = lazy(
+  () => import("./pages/learn/mongo/MongoNodeLearnPage"),
+);
+const MongoSchemaDesignLearnPage = lazy(
+  () => import("./pages/learn/mongo/MongoSchemaDesignLearnPage"),
+);
+const MongoIndexesAggregationLearnPage = lazy(
+  () => import("./pages/learn/mongo/MongoIndexesAggregationLearnPage"),
+);
+
 function RouteFallback() {
   return (
     <div className="d-flex justify-content-center py-5">
@@ -276,6 +299,21 @@ function App() {
             <Route
               path="/learn/node-interview-qa"
               element={<NodeInterviewQaLearnPage />}
+            />
+
+            {/* MongoDB track */}
+            <Route path="/learn/mongo-what-is" element={<MongoWhatIsLearnPage />} />
+            <Route path="/learn/mongo-install" element={<MongoInstallLearnPage />} />
+            <Route path="/learn/mongo-crud" element={<MongoCrudLearnPage />} />
+            <Route path="/learn/mongo-queries" element={<MongoQueriesLearnPage />} />
+            <Route path="/learn/mongo-node" element={<MongoNodeLearnPage />} />
+            <Route
+              path="/learn/mongo-schema-design"
+              element={<MongoSchemaDesignLearnPage />}
+            />
+            <Route
+              path="/learn/mongo-indexes-aggregation"
+              element={<MongoIndexesAggregationLearnPage />}
             />
           </Route>
         </Routes>

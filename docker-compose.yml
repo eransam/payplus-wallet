@@ -41,7 +41,23 @@ services:
       timeout: 5s
       retries: 10
 
+  # MongoDB — למסלול הלמידה (שיעור 2 במסלול MongoDB)
+  mongo:
+    image: mongo:7
+    container_name: payplus-wallet-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - payplus_mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 # הגדרת ה-volumes (מקום אחסון קבוע מחוץ לקונטיינר)
 volumes:
   payplus_pg_data:
   payplus_redis_data:
+  payplus_mongo_data:

@@ -11,9 +11,9 @@ export type LearnCategory = {
   slugs: string[];
 };
 
-/** מסלול לימודים — React / Node.js */
+/** מסלול לימודים — React / Node.js / MongoDB */
 export type LearnTrack = {
-  id: "react" | "nodejs";
+  id: "react" | "nodejs" | "mongodb";
   title: string;
   summary: string;
   categories: LearnCategory[];
@@ -468,6 +468,65 @@ const nodeCategories: LearnCategory[] = [
   },
 ];
 
+/** —— MongoDB —— (מספור שיעורים נפרד) */
+const mongoTopics: LearnTopic[] = [
+  {
+    slug: "mongo-what-is",
+    lesson: 1,
+    title: "מה זה MongoDB",
+    summary: "מאפס — מסד מסמכים (NoSQL), במה שונה מ-Postgres, ומתי בוחרים בו",
+  },
+  {
+    slug: "mongo-install",
+    lesson: 2,
+    title: "התקנה + Compass (GUI)",
+    summary: "הרצה עם Docker, התקנת MongoDB Compass, mongosh — סביבת עבודה מלאה",
+  },
+  {
+    slug: "mongo-crud",
+    lesson: 3,
+    title: "CRUD — הפעולות הבסיסיות",
+    summary: "insertOne, find, updateOne, deleteOne — עם דוגמאות על ארנקים",
+  },
+  {
+    slug: "mongo-queries",
+    lesson: 4,
+    title: "שאילתות ואופרטורים",
+    summary: "$gt, $in, $or, sort, limit, projection — לשלוף בדיוק מה שצריך",
+  },
+  {
+    slug: "mongo-node",
+    lesson: 5,
+    title: "MongoDB עם Node.js",
+    summary: "החיבור מהקוד — driver רשמי מול Mongoose, סכמות ומודלים",
+  },
+  {
+    slug: "mongo-schema-design",
+    lesson: 6,
+    title: "עיצוב סכמה: Embed מול Reference",
+    summary: "ההחלטה החשובה ביותר במונגו — מתי מטמיעים מסמך ומתי מפנים",
+  },
+  {
+    slug: "mongo-indexes-aggregation",
+    lesson: 7,
+    title: "אינדקסים ו-Aggregation",
+    summary: "ביצועים עם אינדקסים, ו-pipeline לסיכומים — כמו GROUP BY ב-SQL",
+  },
+];
+
+const mongoCategories: LearnCategory[] = [
+  {
+    id: "mongo-foundations",
+    title: "יסודות MongoDB",
+    slugs: ["mongo-what-is", "mongo-install", "mongo-crud", "mongo-queries"],
+  },
+  {
+    id: "mongo-advanced",
+    title: "עבודה אמיתית",
+    slugs: ["mongo-node", "mongo-schema-design", "mongo-indexes-aggregation"],
+  },
+];
+
 export const learnTracks: LearnTrack[] = [
   {
     id: "react",
@@ -482,10 +541,21 @@ export const learnTracks: LearnTrack[] = [
       "קורס Node.js / Express כללי ברמת סניור — Event Loop, שכבות, Postgres, Redis, JWT",
     categories: nodeCategories,
   },
+  {
+    id: "mongodb",
+    title: "MongoDB",
+    summary:
+      "קורס MongoDB מאפס — מסמכים, התקנה + Compass, CRUD, שאילתות, Mongoose, עיצוב סכמה",
+    categories: mongoCategories,
+  },
 ];
 
-/** כל השיעורים (שני המסלולים) */
-export const learnTopics: LearnTopic[] = [...reactTopics, ...nodeTopics];
+/** כל השיעורים (כל המסלולים) */
+export const learnTopics: LearnTopic[] = [
+  ...reactTopics,
+  ...nodeTopics,
+  ...mongoTopics,
+];
 
 /** תאימות לאחור — קטגוריות React בלבד */
 export const learnCategories: LearnCategory[] = reactCategories;
